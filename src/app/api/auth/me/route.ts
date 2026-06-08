@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
-import { prisma } from '@/lib/db-client';
+import db from '@/lib/db';
 
 export async function GET() {
   try {
