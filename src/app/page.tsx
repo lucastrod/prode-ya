@@ -1,65 +1,385 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+import { 
+  Trophy, 
+  Calendar, 
+  Gift, 
+  User, 
+  ChevronRight, 
+  Clock, 
+  Save, 
+  CheckCircle, 
+  AlertCircle 
+} from 'lucide-react';
+
+interface Match {
+  id: number;
+  homeTeam: string;
+  awayTeam: string;
+  matchDate: string;
+  groupName: string;
+  status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'CANCELLED';
+  homeScore: number | null;
+  awayScore: number | null;
+}
+
+interface Prediction {
+  matchId: number;
+  predictedHomeScore: number;
+  predictedAwayScore: number;
+}
+
+export default function HomePage() {
+  const { user, profile } = useAuth();
+  
+  const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
+  const [predictions, setPredictions] = useState<Record<number, Prediction>>({});
+  const [loading, setLoading] = useState(true);
+  const [saveStates, setSaveStates] = useState<Record<number, 'idle' | 'saving' | 'saved' | 'error'>>({});
+
+  useEffect(() => {
+    if (!user) return;
+
+    const loadDashboardData = async () => {
+      try {
+        // Fetch matches
+        const matchesRes = await fetch('/api/matches');
+        const predictionsRes = await fetch(`/api/predictions?userId=${user.id}`);
+        
+        if (matchesRes.ok && predictionsRes.ok) {
+          const matchesData = await matchesRes.json();
+          const predictionsData = await predictionsRes.json();
+
+          // Get next 3 upcoming matches (status SCHEDULED, sorted by date asc)
+          const now = new Date();
+          const upcoming = (matchesData.matches || [])
+            .filter((m: Match) => m.status === 'SCHEDULED' && new Date(m.matchDate) > now)
+            .slice(0, 3);
+
+          setUpcomingMatches(upcoming);
+
+          // Populate existing predictions in state
+          const predsMap: Record<number, Prediction> = {};
+          (predictionsData.predictions || []).forEach((p: any) => {
+            predsMap[p.matchId] = {
+              matchId: p.matchId,
+              predictedHomeScore: p.predictedHomeScore,
+              predictedAwayScore: p.predictedAwayScore,
+            };
+          });
+          setPredictions(predsMap);
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, [user]);
+
+  const handleScoreChange = (matchId: number, team: 'home' | 'away', val: string) => {
+    const scoreVal = val === '' ? 0 : Math.max(0, parseInt(val) || 0);
+    
+    setPredictions((prev) => ({
+      ...prev,
+      [matchId]: {
+        ...prev[matchId] || { matchId, predictedHomeScore: 0, predictedAwayScore: 0 },
+        [team === 'home' ? 'predictedHomeScore' : 'predictedAwayScore']: scoreVal,
+      },
+    }));
+
+    // Reset save state on change
+    setSaveStates((prev) => ({ ...prev, [matchId]: 'idle' }));
+  };
+
+  const handleSavePrediction = async (matchId: number) => {
+    if (!user) return;
+    
+    const pred = predictions[matchId];
+    if (!pred) return;
+
+    setSaveStates((prev) => ({ ...prev, [matchId]: 'saving' }));
+
+    try {
+      const res = await fetch('/api/predictions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          matchId,
+          predictedHomeScore: pred.predictedHomeScore,
+          predictedAwayScore: pred.predictedAwayScore,
+        }),
+      });
+
+      if (res.ok) {
+        setSaveStates((prev) => ({ ...prev, [matchId]: 'saved' }));
+        setTimeout(() => {
+          setSaveStates((prev) => ({ ...prev, [matchId]: 'idle' }));
+        }, 3000);
+      } else {
+        setSaveStates((prev) => ({ ...prev, [matchId]: 'error' }));
+      }
+    } catch (err) {
+      console.error('Error saving prediction:', err);
+      setSaveStates((prev) => ({ ...prev, [matchId]: 'error' }));
+    }
+  };
+
+  const formatMatchDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }) + ' hs';
+  };
+
+  const quickActions = [
+    { 
+      name: 'Próximos Partidos', 
+      desc: 'Cargá y editá tus pronósticos', 
+      href: '/groups', 
+      icon: Calendar,
+      color: 'bg-sya-orange',
+    },
+    { 
+      name: 'Mis Pronósticos', 
+      desc: 'Revisá tus puntos y resultados', 
+      href: '/predictions', 
+      icon: User,
+      color: 'bg-sya-blue',
+    },
+    { 
+      name: 'Tabla de Posiciones', 
+      desc: 'Mirá el ranking del torneo', 
+      href: '/standings', 
+      icon: Trophy,
+      color: 'bg-emerald-500',
+    },
+    { 
+      name: 'Premios del Prode', 
+      desc: 'Conocé los premios para los ganadores', 
+      href: '/prizes', 
+      icon: Gift,
+      color: 'bg-indigo-500',
+    },
+  ];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="space-y-8 pb-10">
+      
+      {/* Welcome Banner */}
+      <section className="sya-glass p-8 sya-card-accent relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2 z-10">
+          <span className="text-xs uppercase font-extrabold tracking-wider text-sya-orange">Torneo Soluciones YA 2026</span>
+          <h1 className="text-3xl font-extrabold font-serif tracking-tight">
+            Mundial de Pronósticos PRODE YA
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xl font-medium">
+            ¡Demostrá tus conocimientos de fútbol, sumá puntos prediciendo resultados y participá por cenas premium, gift cards y kits mundialistas exclusivos!
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="flex gap-4 shrink-0 z-10">
+          <Link href="/groups" className="px-6 py-3 sya-button-primary text-sm shadow-md">
+            Cargar Pronósticos
+          </Link>
         </div>
-      </main>
+      </section>
+
+      {/* Quick Actions Grid */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-extrabold font-serif tracking-wide border-l-4 border-sya-orange pl-3">
+          Accesos Rápidos
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link 
+                key={action.name} 
+                href={action.href}
+                className="sya-glass p-6 group hover:translate-y-[-4px] transition-all duration-300 relative overflow-hidden"
+              >
+                <div className={`w-12 h-12 rounded-2xl ${action.color} flex items-center justify-center text-white mb-4 shadow-md group-hover:scale-110 transition-transform`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+                <h3 className="font-extrabold text-lg group-hover:text-sya-orange transition-colors">
+                  {action.name}
+                </h3>
+                <p className="text-xs text-gray-400 font-medium mt-1 mb-4">
+                  {action.desc}
+                </p>
+                <div className="flex items-center text-xs font-bold text-sya-blue group-hover:text-sya-orange transition-colors">
+                  <span>Ir ahora</span>
+                  <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Home Main Split Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left 2 Cols: Upcoming matches prediction helper */}
+        <section className="lg:col-span-2 space-y-4">
+          <h2 className="text-xl font-extrabold font-serif tracking-wide border-l-4 border-sya-orange pl-3">
+            Próximos Partidos a Jugar
+          </h2>
+
+          {loading ? (
+            <div className="sya-glass p-12 text-center text-gray-400 font-semibold animate-pulse">
+              Cargando fixture...
+            </div>
+          ) : upcomingMatches.length === 0 ? (
+            <div className="sya-glass p-8 text-center text-gray-400 font-semibold border-dashed border-2">
+              No hay partidos próximos programados. ¡Revisá la sección de Fase de Grupos!
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {upcomingMatches.map((match) => {
+                const pred = predictions[match.id] || { predictedHomeScore: 0, predictedAwayScore: 0 };
+                const saveState = saveStates[match.id] || 'idle';
+                
+                return (
+                  <div key={match.id} className="sya-glass p-5 hover:border-sya-orange/30 transition-all">
+                    
+                    {/* Header: Date and Group */}
+                    <div className="flex justify-between items-center text-xs text-gray-400 font-bold mb-4">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-sya-orange" />
+                        <span>{formatMatchDate(match.matchDate)}</span>
+                      </div>
+                      <span className="bg-sya-blue/10 text-sya-blue px-2.5 py-1 rounded-full uppercase">
+                        {match.groupName}
+                      </span>
+                    </div>
+
+                    {/* Score Input Fields Grid */}
+                    <div className="flex items-center justify-between gap-4">
+                      
+                      {/* Home Team */}
+                      <div className="flex-1 text-right font-bold text-sm sm:text-base pr-2 truncate">
+                        {match.homeTeam}
+                      </div>
+
+                      {/* Inputs Row */}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          value={pred.predictedHomeScore}
+                          onChange={(e) => handleScoreChange(match.id, 'home', e.target.value)}
+                          className="w-12 h-12 text-center bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent font-extrabold text-lg"
+                        />
+                        <span className="text-gray-400 font-bold">vs</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={pred.predictedAwayScore}
+                          onChange={(e) => handleScoreChange(match.id, 'away', e.target.value)}
+                          className="w-12 h-12 text-center bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent font-extrabold text-lg"
+                        />
+                      </div>
+
+                      {/* Away Team */}
+                      <div className="flex-1 text-left font-bold text-sm sm:text-base pl-2 truncate">
+                        {match.awayTeam}
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="w-28 flex justify-end shrink-0">
+                        <button
+                          onClick={() => handleSavePrediction(match.id)}
+                          disabled={saveState === 'saving'}
+                          className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                            saveState === 'saved'
+                              ? 'bg-green-500 text-white'
+                              : saveState === 'error'
+                              ? 'bg-red-500 text-white'
+                              : 'bg-sya-orange hover:bg-sya-orange-hover text-white'
+                          }`}
+                        >
+                          {saveState === 'saving' ? (
+                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          ) : saveState === 'saved' ? (
+                            <>
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span>Guardado</span>
+                            </>
+                          ) : saveState === 'error' ? (
+                            <>
+                              <AlertCircle className="w-3.5 h-3.5" />
+                              <span>Error</span>
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-3.5 h-3.5" />
+                              <span>Predecir</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="text-right">
+                <Link href="/groups" className="text-xs font-bold text-sya-blue hover:text-sya-orange hover:underline transition-colors inline-flex items-center gap-1">
+                  <span>Ver todas las predicciones</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Right 1 Col: Rule cards & info */}
+        <section className="space-y-4">
+          <h2 className="text-xl font-extrabold font-serif tracking-wide border-l-4 border-sya-orange pl-3">
+            Reglas del PRODE
+          </h2>
+          <div className="sya-glass p-6 space-y-4">
+            <div className="space-y-2">
+              <h3 className="font-extrabold text-sm text-sya-orange uppercase tracking-wider">Cómputo de Puntos</h3>
+              <ul className="text-xs space-y-2 font-semibold">
+                <li className="flex items-start gap-2 text-green-500">
+                  <span className="font-bold">3 pts</span>
+                  <span>Resultado Exacto (ej. predecís 2-1 y sale 2-1).</span>
+                </li>
+                <li className="flex items-start gap-2 text-sya-blue">
+                  <span className="font-bold">1 pt</span>
+                  <span>Acertar Ganador o Empate sin marcador exacto (ej. predecís 2-1 y sale 1-0).</span>
+                </li>
+                <li className="flex items-start gap-2 text-red-500">
+                  <span className="font-bold">0 pts</span>
+                  <span>Predicción incorrecta de ganador/empate.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="h-px bg-gray-200 dark:bg-gray-800"></div>
+
+            <div className="space-y-2">
+              <h3 className="font-extrabold text-sm text-sya-orange uppercase tracking-wider">Tiempos de Carga</h3>
+              <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                Podés cargar o modificar tus predicciones en cualquier momento hasta el inicio del partido. Una vez comenzado, se bloquearán automáticamente.
+              </p>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
     </div>
   );
 }
