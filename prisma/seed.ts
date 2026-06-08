@@ -1,4 +1,5 @@
 import { PrismaClient, Role, Stage, MatchStatus } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -8,29 +9,40 @@ const DEFAULT_PRIZES = [
   { position: 3, title: '🥉 Tercer Puesto', description: 'Kit Mundialista Soluciones YA (Remera, Gorra, Termo).' },
 ];
 
-const DEFAULT_USERS = [
-  {
-    id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    name: 'Lucas Admin',
-    email: 'lucas.admin@solucionesya.com.ar',
-    role: Role.ADMIN,
-    active: true,
-  },
-  {
-    id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
-    name: 'Lucas Empleado',
-    email: 'lucas.empleado@solucionesya.com.ar',
-    role: Role.USER,
-    active: true,
-  },
-];
-
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // 1. Create Default Users
-  console.log('Creating default users...');
-  for (const userData of DEFAULT_USERS) {
+  // 0. Clean DB
+  console.log('Cleaning database (predictions, standings, users)...');
+  await prisma.prediction.deleteMany();
+  await prisma.standing.deleteMany();
+  await prisma.user.deleteMany();
+
+  // 1. Create Admins
+  console.log('Creating Admin users...');
+  
+  const defaultPasswordHash = await bcrypt.hash('admin123', 10);
+  
+  const ADMIN_USERS = [
+    {
+      id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+      name: 'Lucas Admin',
+      email: 'lucas.admin@solucionesya.com.ar',
+      passwordHash: defaultPasswordHash,
+      role: Role.ADMIN,
+      active: true,
+    },
+    {
+      id: 'b1ffcd88-8d1a-5fe9-ac7e-7cc0ce491b22',
+      name: 'Gonzalo Admin',
+      email: 'gonzalo.admin@solucionesya.com.ar',
+      passwordHash: defaultPasswordHash,
+      role: Role.ADMIN,
+      active: true,
+    },
+  ];
+
+  for (const userData of ADMIN_USERS) {
     await prisma.user.upsert({
       where: { email: userData.email },
       update: {},
@@ -38,17 +50,17 @@ async function main() {
     });
   }
 
-  // 2. Create Standings for Default Users
+  // 2. Create Standings for Admins
   console.log('Creating standings...');
-  for (const userData of DEFAULT_USERS) {
+  for (const userData of ADMIN_USERS) {
     await prisma.standing.upsert({
       where: { userId: userData.id },
       update: {},
       create: {
         userId: userData.id,
-        totalPoints: userData.role === Role.ADMIN ? 0 : 27, // Lucas has 27 points in the mockup
-        exactScores: userData.role === Role.ADMIN ? 0 : 5,  // Lucas has 5 exact hits
-        correctOutcomes: userData.role === Role.ADMIN ? 0 : 12, // (5*3 + 12*1 = 27 points)
+        totalPoints: 0,
+        exactScores: 0,
+        correctOutcomes: 0,
       },
     });
   }
@@ -85,3 +97,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

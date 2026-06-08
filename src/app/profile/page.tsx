@@ -1,27 +1,27 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 import { 
   User, 
   Mail, 
   Shield, 
-  Sparkles, 
   Calendar, 
-  Lock, 
-  Settings, 
-  Database,
-  Award,
-  CheckCircle,
-  HelpCircle,
-  Clock
+  LogOut,
 } from 'lucide-react';
 import PredictionsPage from '../predictions/page';
 
 export default function ProfilePage() {
-  const { user, profile, isMock, toggleMockRole } = useAuth();
+  const { profile, signOut } = useAuth();
+  const router = useRouter();
   
   if (!profile) return null;
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/login');
+  };
 
   return (
     <div className="space-y-8 pb-12">
@@ -85,41 +85,27 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Development Evaluator Helper Card */}
-        <div className="sya-glass p-6 border-t-8 border-sya-blue flex flex-col justify-between">
+        {/* Action Card */}
+        <div className="sya-glass p-6 border-t-8 border-red-500 flex flex-col justify-between">
           <div className="space-y-4">
-            <h2 className="text-lg font-extrabold font-serif border-b border-gray-200 dark:border-gray-800 pb-3 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-sya-blue" />
-              Mock Evaluador
+            <h2 className="text-lg font-extrabold font-serif border-b border-gray-200 dark:border-gray-800 pb-3 flex items-center gap-2 text-red-500">
+              <LogOut className="w-5 h-5" />
+              Sesión
             </h2>
             
             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
-              Esta sección te permite alternar tu rol entre <strong>Empleado (User)</strong> y <strong>Administrador (Admin)</strong> en tiempo real para evaluar las distintas vistas del sistema de forma simple.
+              Cerrar tu sesión terminará tu acceso actual. Necesitarás iniciar sesión nuevamente para hacer pronósticos o ver la tabla.
             </p>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800 space-y-4">
-            <div className="flex items-center justify-between text-xs font-bold">
-              <span className="text-gray-400">Mock Mode:</span>
-              <span className={isMock ? 'text-green-500' : 'text-sya-orange'}>
-                {isMock ? 'Habilitado (Offline)' : 'Deshabilitado (Real)'}
-              </span>
-            </div>
-            
-            {isMock ? (
-              <button
-                onClick={toggleMockRole}
-                className="w-full py-3.5 sya-button-primary text-xs flex items-center justify-center gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>Cambiar a {profile.role === 'USER' ? 'Admin' : 'Empleado'}</span>
-              </button>
-            ) : (
-              <div className="text-[10px] text-gray-400 font-medium leading-relaxed bg-sya-orange/5 p-3 rounded-xl border border-sya-orange/20 flex gap-2">
-                <Database className="w-4 h-4 text-sya-orange shrink-0 mt-0.5" />
-                <span>Estás conectado a Supabase en tiempo real. Para habilitar mock toggle, vacía la URL de Supabase en `.env.local`.</span>
-              </div>
-            )}
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+            <button
+              onClick={handleLogout}
+              className="w-full py-3.5 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-red-500/20"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Cerrar Sesión</span>
+            </button>
           </div>
         </div>
 

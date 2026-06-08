@@ -3,16 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Sparkles, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { Sparkles, Mail, Lock, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, login, signUp, isMock } = useAuth();
+  const { user, login } = useAuth();
   
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -28,45 +26,24 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    if (!email || !password || (isSignUp && !name)) {
+    if (!email || !password) {
       setError('Por favor, completa todos los campos.');
       setLoading(false);
       return;
     }
 
     try {
-      if (isSignUp) {
-        const res = await signUp(name, email, password);
-        if (!res.success) {
-          setError(res.error || 'Hubo un error al registrarse.');
-        } else {
-          router.push('/');
-        }
+      const res = await login(email, password);
+      if (!res.success) {
+        setError(res.error || 'Credenciales inválidas.');
       } else {
-        const res = await login(email, password);
-        if (!res.success) {
-          setError(res.error || 'Credenciales inválidas.');
-        } else {
-          router.push('/');
-        }
+        router.push('/');
       }
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleFillMockUser = () => {
-    setEmail('lucas@solucionesya.com.ar');
-    setPassword('lucas123');
-    setName('Lucas');
-  };
-
-  const handleFillMockAdmin = () => {
-    setEmail('lucas.admin@solucionesya.com.ar');
-    setPassword('admin123');
-    setName('Lucas Admin');
   };
 
   return (
@@ -87,7 +64,7 @@ export default function LoginPage() {
             PRODE YA 2026
           </h2>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 font-medium">
-            Mundial de Pronósticos de Soluciones YA
+            Acceso Exclusivo Soluciones YA
           </p>
         </div>
 
@@ -100,24 +77,6 @@ export default function LoginPage() {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-2xl space-y-4">
-            {isSignUp && (
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Nombre Completo</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400">
-                    <User className="w-5 h-5" />
-                  </span>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="block w-full pl-11 pr-4 py-3 bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sya-orange/50 focus:border-sya-orange font-medium text-sm transition-all"
-                    placeholder="Ej. Lucas González"
-                  />
-                </div>
-              </div>
-            )}
-
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Correo Electrónico</label>
               <div className="relative">
@@ -159,8 +118,6 @@ export default function LoginPage() {
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : isSignUp ? (
-                'Registrarse'
               ) : (
                 'Ingresar'
               )}
@@ -168,37 +125,6 @@ export default function LoginPage() {
           </div>
         </form>
 
-        <div className="text-center mt-4">
-          <button
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-xs text-sya-blue hover:underline font-bold transition-all"
-          >
-            {isSignUp ? '¿Ya tenés una cuenta? Iniciar Sesión' : '¿No tenés cuenta? Registrate'}
-          </button>
-        </div>
-
-        {/* Mock helpers container for quick evaluations */}
-        {isMock && (
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800 text-center space-y-3">
-            <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
-              Evaluación (Mock Mode Activo)
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={handleFillMockUser}
-                className="py-2 px-3 text-xs bg-sya-orange/10 hover:bg-sya-orange/20 text-sya-orange font-semibold rounded-xl transition-colors"
-              >
-                Completar como Empleado
-              </button>
-              <button
-                onClick={handleFillMockAdmin}
-                className="py-2 px-3 text-xs bg-sya-blue/10 hover:bg-sya-blue/20 text-sya-blue font-semibold rounded-xl transition-colors"
-              >
-                Completar como Admin
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
