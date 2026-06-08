@@ -1,7 +1,8 @@
-import { PrismaClient, Role, Stage, MatchStatus } from '@prisma/client';
+import { Role, Stage, MatchStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import db from '../src/lib/db';
 
-const prisma = new PrismaClient();
+const prisma = db;
 
 const DEFAULT_PRIZES = [
   { position: 1, title: '🥇 Primer Puesto', description: 'Cena para dos personas en restaurant premium.' },
