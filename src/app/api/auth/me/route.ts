@@ -9,7 +9,7 @@ export async function GET() {
       return NextResponse.json({ profile: null }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: session.userId },
       select: {
         id: true,

@@ -7,6 +7,5 @@ export default defineConfig({
   },
   datasource: {
     url: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/postgres",
-    directUrl: process.env.POSTGRES_URL_NON_POOLING || process.env.DIRECT_URL,
   },
 });
