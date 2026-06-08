@@ -11,7 +11,10 @@ const getPrisma = (): PrismaClient => {
   }
 
   const connectionString = process.env.POSTGRES_PRISMA_URL || process.env.POSTGRES_URL || process.env.DATABASE_URL;
-  const pool = new Pool({ connectionString });
+  const pool = new Pool({ 
+    connectionString,
+    ssl: connectionString?.includes('neon.tech') ? true : undefined
+  });
   const adapter = new PrismaPg(pool);
 
   const prisma = new PrismaClient({
