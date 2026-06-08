@@ -56,10 +56,9 @@ export default function LoginPage() {
         </div>
 
         {/* Brand Header */}
-        <div className="text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-sya-orange flex items-center justify-center text-white font-extrabold text-2xl shadow-lg mb-4">
-            SY
-          </div>
+        <div className="flex flex-col items-center justify-center mb-8">
+          <img src="/images/logo-light.png" alt="Soluciones YA" className="h-24 w-auto block dark:hidden mb-4" />
+          <img src="/images/logo-dark.png" alt="Soluciones YA" className="h-24 w-auto hidden dark:block mb-4" />
           <h2 className="text-3xl font-extrabold font-serif bg-gradient-to-r from-sya-orange to-sya-orange-hover bg-clip-text text-transparent">
             PRODE YA 2026
           </h2>

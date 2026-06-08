@@ -148,16 +148,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <aside className="hidden md:flex flex-col w-72 bg-white dark:bg-[#111827] border-r border-gray-200 dark:border-gray-800 shadow-md">
         
         {/* Brand Logo */}
-        <div className="flex items-center gap-3 px-6 py-6 border-b border-gray-200 dark:border-gray-800">
-          <div className="w-10 h-10 rounded-full bg-sya-orange flex items-center justify-center text-white font-extrabold text-lg shadow-md animate-bounce">
-            SY
-          </div>
-          <div>
-            <h1 className="font-extrabold font-serif tracking-wider text-xl bg-gradient-to-r from-sya-orange to-sya-orange-hover bg-clip-text text-transparent">
-              PRODE YA
-            </h1>
-            <p className="text-xs text-gray-400 font-medium">Soluciones YA 2026</p>
-          </div>
+        <div className="flex justify-center px-6 py-6 border-b border-gray-200 dark:border-gray-800">
+          <img src="/images/logo-light.png" alt="Soluciones YA" className="h-16 w-auto block dark:hidden" />
+          <img src="/images/logo-dark.png" alt="Soluciones YA" className="h-16 w-auto hidden dark:block" />
         </div>
 
         {/* Navigation Items */}
