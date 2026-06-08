@@ -32,7 +32,7 @@ interface StandingRow {
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, profile, loading, signOut, toggleMockRole, isMock } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userStats, setUserStats] = useState({ rank: '-', points: 0, exacts: 0 });
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -205,15 +205,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </div>
 
           <div className="flex flex-col gap-2">
-            {isMock && (
-              <button 
-                onClick={toggleMockRole}
-                className="w-full text-xs font-semibold py-1.5 px-3 rounded-lg bg-sya-orange/10 hover:bg-sya-orange/20 text-sya-orange transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Ver como {profile.role === 'USER' ? 'Admin' : 'Usuario'}
-              </button>
-            )}
+
             <button
               onClick={signOut}
               className="w-full text-xs font-semibold text-red-500 hover:bg-red-500/10 py-1.5 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5"
@@ -328,18 +320,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               </nav>
 
               <div className="border-t border-gray-200 dark:border-gray-800 pt-4 flex flex-col gap-2">
-                {isMock && (
-                  <button 
-                    onClick={() => {
-                      toggleMockRole();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full text-xs font-semibold py-1.5 px-3 rounded-lg bg-sya-orange/10 text-sya-orange flex items-center justify-center gap-1.5"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Ver como {profile.role === 'USER' ? 'Admin' : 'Usuario'}
-                  </button>
-                )}
+
                 <button
                   onClick={() => {
                     signOut();
