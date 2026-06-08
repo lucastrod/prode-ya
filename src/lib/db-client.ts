@@ -388,7 +388,7 @@ export const dbClient = {
       try {
         return await db.user.upsert({
           where: { id },
-          create: { id, name, email, role: 'USER' },
+          create: { id, name, email, role: 'USER', passwordHash: 'default' },
           update: { name, email },
         });
       } catch (err) {
@@ -427,6 +427,7 @@ export const dbClient = {
             email: userData.email,
             role: userData.role,
             active: userData.active ?? true,
+            passwordHash: 'default',
           },
         });
       } catch (err) {
