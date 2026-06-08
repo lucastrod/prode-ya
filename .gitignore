@@ -42,3 +42,5 @@ next-env.d.ts
 mock_db.json
 /scratch/
 
+
+.vercel

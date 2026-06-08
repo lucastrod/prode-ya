@@ -10,7 +10,7 @@ const getPrisma = (): PrismaClient => {
     return globalForPrisma.prisma;
   }
 
-  const connectionString = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL;
+  const connectionString = process.env.POSTGRES_PRISMA_URL || process.env.POSTGRES_URL || process.env.DATABASE_URL;
   const pool = new Pool({ connectionString });
   const adapter = new PrismaPg(pool);
 
