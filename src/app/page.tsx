@@ -192,7 +192,7 @@ export default function HomePage() {
             Mundial de Pronósticos PRODE YA
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xl font-medium">
-            ¡Demostrá tus conocimientos de fútbol, sumá puntos prediciendo resultados y preparate para sorpresas increíbles! Los premios finales son un gran misterio que iremos revelando muy pronto en la sección de Premios. ¿Te animás a liderar la tabla?
+            ¡Demostrá tus conocimientos de fútbol y sumá puntos! Los premios son un misterio que pronto revelaremos en su sección. ¿Te animás a liderar la tabla?
           </p>
         </div>
         <div className="flex gap-4 shrink-0 z-10">
@@ -385,7 +385,7 @@ export default function HomePage() {
             <div className="space-y-2">
               <h3 className="font-extrabold text-sm text-sya-orange uppercase tracking-wider">Tiempos de Carga</h3>
               <p className="text-xs text-gray-400 font-medium leading-relaxed">
-                Podés cargar o modificar tus predicciones en cualquier momento hasta el inicio del partido. Una vez comenzado, se bloquearán automáticamente.
+                Podés cargar o modificar tus predicciones en cualquier momento. Por seguridad, se bloquearán automáticamente 15 minutos antes del inicio del partido.
               </p>
             </div>
           </div>
