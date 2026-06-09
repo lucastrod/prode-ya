@@ -103,8 +103,8 @@ export default function PredictionsPage() {
             };
           });
 
-          // Sort predictions: locked/finished first, then by date desc
-          merged.sort((a, b) => new Date(b.match.matchDate).getTime() - new Date(a.match.matchDate).getTime());
+          // Sort predictions: locked/finished first, then by date asc
+          merged.sort((a, b) => new Date(a.match.matchDate).getTime() - new Date(b.match.matchDate).getTime());
 
           setMergedList(merged);
           setStats({
