@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { 
@@ -9,18 +9,52 @@ import {
   Shield, 
   Calendar, 
   LogOut,
+  Key,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import PredictionsPage from '../predictions/page';
 
 export default function ProfilePage() {
   const { profile, signOut } = useAuth();
   const router = useRouter();
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordStatus, setPasswordStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [passwordError, setPasswordError] = useState('');
   
   if (!profile) return null;
 
   const handleLogout = async () => {
     await signOut();
     router.push('/login');
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordStatus('loading');
+    setPasswordError('');
+    try {
+      const res = await fetch('/api/users/profile/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPasswordStatus('success');
+        setCurrentPassword('');
+        setNewPassword('');
+        setTimeout(() => setPasswordStatus('idle'), 3000);
+      } else {
+        setPasswordStatus('error');
+        setPasswordError(data.error || 'Error al cambiar contraseña');
+      }
+    } catch (err) {
+      setPasswordStatus('error');
+      setPasswordError('Error de red');
+    }
   };
 
   return (
@@ -82,6 +116,59 @@ export default function ProfilePage() {
               </div>
             </div>
 
+          </div>
+
+          {/* Change Password Form */}
+          <div className="mt-8 border-t border-gray-200 dark:border-gray-800 pt-6">
+            <h3 className="text-md font-extrabold font-serif mb-4 flex items-center gap-2">
+              <Key className="w-4 h-4 text-sya-orange" />
+              Cambiar Contraseña
+            </h3>
+            <form onSubmit={handlePasswordChange} className="space-y-4 max-w-sm">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-400 uppercase">Contraseña Actual</label>
+                <input 
+                  type="password" 
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full py-2 px-3 bg-gray-500/5 rounded-xl border border-gray-200 dark:border-gray-800 font-semibold text-sm focus:ring-2 focus:ring-sya-orange focus:outline-none"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-400 uppercase">Nueva Contraseña</label>
+                <input 
+                  type="password" 
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full py-2 px-3 bg-gray-500/5 rounded-xl border border-gray-200 dark:border-gray-800 font-semibold text-sm focus:ring-2 focus:ring-sya-orange focus:outline-none"
+                  required
+                  minLength={6}
+                />
+              </div>
+              
+              {passwordStatus === 'error' && (
+                <div className="text-red-500 text-xs font-bold flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  {passwordError}
+                </div>
+              )}
+
+              {passwordStatus === 'success' && (
+                <div className="text-green-500 text-xs font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Contraseña actualizada con éxito
+                </div>
+              )}
+
+              <button 
+                type="submit"
+                disabled={passwordStatus === 'loading'}
+                className="py-2 px-4 bg-gray-800 dark:bg-white text-white dark:text-black font-bold text-xs rounded-xl hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                {passwordStatus === 'loading' ? 'Actualizando...' : 'Actualizar Contraseña'}
+              </button>
+            </form>
           </div>
         </div>
 
