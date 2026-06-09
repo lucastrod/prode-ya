@@ -182,7 +182,7 @@ export default function GroupsPage() {
           Fase de Grupos
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-          Seleccioná un grupo y cargá tus predicciones. Los partidos se bloquean automáticamente al comenzar.
+          Seleccioná un grupo y cargá tus predicciones. Los partidos se bloquean automáticamente 15 minutos antes de comenzar.
         </p>
       </div>
 

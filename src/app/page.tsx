@@ -192,7 +192,7 @@ export default function HomePage() {
             Mundial de Pronósticos PRODE YA
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xl font-medium">
-            ¡Demostrá tus conocimientos de fútbol, sumá puntos prediciendo resultados y participá por cenas premium, gift cards y kits mundialistas exclusivos!
+            ¡Demostrá tus conocimientos de fútbol, sumá puntos prediciendo resultados y preparate para sorpresas increíbles! Los premios finales son un gran misterio que iremos revelando muy pronto en la sección de Premios. ¿Te animás a liderar la tabla?
           </p>
         </div>
         <div className="flex gap-4 shrink-0 z-10">
