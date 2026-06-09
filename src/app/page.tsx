@@ -53,11 +53,11 @@ export default function HomePage() {
           const matchesData = await matchesRes.json();
           const predictionsData = await predictionsRes.json();
 
-          // Get next 3 upcoming matches (status SCHEDULED, sorted by date asc)
+          // Get next 10 upcoming matches (status SCHEDULED, sorted by date asc)
           const now = new Date();
           const upcoming = (matchesData.matches || [])
             .filter((m: Match) => m.status === 'SCHEDULED' && new Date(m.matchDate) > now)
-            .slice(0, 3);
+            .slice(0, 10);
 
           setUpcomingMatches(upcoming);
 
@@ -245,7 +245,8 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {upcomingMatches.map((match) => {
+              <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                {upcomingMatches.map((match) => {
                 const pred = predictions[match.id] || { predictedHomeScore: 0, predictedAwayScore: 0 };
                 const saveState = saveStates[match.id] || 'idle';
                 
@@ -333,7 +334,8 @@ export default function HomePage() {
                   </div>
                 );
               })}
-              <div className="text-right">
+              </div>
+              <div className="text-right mt-4">
                 <Link href="/groups" className="text-xs font-bold text-sya-blue hover:text-sya-orange hover:underline transition-colors inline-flex items-center gap-1">
                   <span>Ver todas las predicciones</span>
                   <ChevronRight className="w-4 h-4" />

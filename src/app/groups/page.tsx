@@ -129,7 +129,10 @@ export default function GroupsPage() {
   };
 
   // Filter matches for the selected group
-  const filteredMatches = matches.filter((m) => m.groupName === selectedGroup);
+  const filteredMatches = matches.filter((m) => {
+    const groupNameEn = selectedGroup.replace('Grupo', 'Group');
+    return m.groupName === selectedGroup || m.groupName === groupNameEn;
+  });
 
   return (
     <div className="space-y-6 pb-12">
