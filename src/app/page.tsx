@@ -105,8 +105,7 @@ export default function HomePage() {
   const handleSavePrediction = async (matchId: number) => {
     if (!user) return;
     
-    const pred = predictions[matchId];
-    if (!pred) return;
+    const pred = predictions[matchId] || { predictedHomeScore: 0, predictedAwayScore: 0 };
 
     setSaveStates((prev) => ({ ...prev, [matchId]: 'saving' }));
 
@@ -316,6 +315,8 @@ export default function HomePage() {
                               ? 'bg-green-500 text-white'
                               : saveState === 'error'
                               ? 'bg-red-500 text-white'
+                              : savedMatchIds.has(match.id)
+                              ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
                               : 'bg-sya-orange hover:bg-sya-orange-hover text-white'
                           }`}
                         >
