@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    let userId = randomUUID();
+    let userId: string = randomUUID();
 
     // Try to create user in Supabase Auth using Admin Client
     try {
