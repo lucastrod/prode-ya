@@ -73,6 +73,32 @@ export default function GroupsPage() {
     loadData();
   }, [user]);
 
+  // Handle query parameters for automatic group selection and scroll
+  useEffect(() => {
+    if (!loading) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const groupParam = searchParams.get('group');
+      const matchParam = searchParams.get('match');
+      
+      if (groupParam && GROUPS.includes(groupParam)) {
+        setSelectedGroup(groupParam);
+      }
+      
+      if (matchParam) {
+        setTimeout(() => {
+          const el = document.getElementById(`match-${matchParam}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('ring-2', 'ring-sya-orange', 'shadow-lg', 'shadow-sya-orange/20');
+            setTimeout(() => {
+              el.classList.remove('ring-2', 'ring-sya-orange', 'shadow-lg', 'shadow-sya-orange/20');
+            }, 3000);
+          }
+        }, 100);
+      }
+    }
+  }, [loading]);
+
   const handleScoreChange = (matchId: number, team: 'home' | 'away', val: string) => {
     const scoreVal = val === '' ? 0 : Math.max(0, parseInt(val) || 0);
 
@@ -189,7 +215,7 @@ export default function GroupsPage() {
             const isLocked = new Date() >= new Date(new Date(match.matchDate).getTime() - 15 * 60000) || match.status !== 'SCHEDULED';
             
             return (
-              <div key={match.id} className="sya-glass p-6 flex flex-col justify-between relative overflow-hidden transition-all hover:shadow-md">
+              <div id={`match-${match.id}`} key={match.id} className="sya-glass p-6 flex flex-col justify-between relative overflow-hidden transition-all duration-1000 hover:shadow-md">
                 
                 {/* Side Lock bar */}
                 {isLocked && (

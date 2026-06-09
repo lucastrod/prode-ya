@@ -281,7 +281,7 @@ export default function PredictionsPage() {
                           </span>
                         )}
                         {row.status === 'Pendiente' && (
-                          <Link href="/groups" className="text-[10px] text-sya-blue hover:text-sya-orange hover:underline font-bold flex items-center gap-1 transition-colors">
+                          <Link href={`/groups?group=${encodeURIComponent(row.match.groupName)}&match=${row.match.id}`} className="text-[10px] text-sya-blue hover:text-sya-orange hover:underline font-bold flex items-center gap-1 transition-colors">
                             <Edit2 className="w-2.5 h-2.5" />
                             Modificar
                           </Link>
