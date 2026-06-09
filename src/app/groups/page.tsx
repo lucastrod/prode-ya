@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Clock, Lock, Save, CheckCircle, AlertCircle, Calendar } from 'lucide-react';
+import { Clock, Lock, Save, CheckCircle, AlertCircle, Calendar, Edit2 } from 'lucide-react';
 
 interface Match {
   id: number;
@@ -34,6 +34,7 @@ export default function GroupsPage() {
   const [selectedGroup, setSelectedGroup] = useState('Grupo A');
   const [loading, setLoading] = useState(true);
   const [saveStates, setSaveStates] = useState<Record<number, 'idle' | 'saving' | 'saved' | 'error'>>({});
+  const [savedMatchIds, setSavedMatchIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!user) return;
@@ -50,14 +51,17 @@ export default function GroupsPage() {
           setMatches(matchesData.matches || []);
           
           const predsMap: Record<number, Prediction> = {};
+          const savedIds = new Set<number>();
           (predictionsData.predictions || []).forEach((p: any) => {
             predsMap[p.matchId] = {
               matchId: p.matchId,
               predictedHomeScore: p.predictedHomeScore,
               predictedAwayScore: p.predictedAwayScore,
             };
+            savedIds.add(p.matchId);
           });
           setPredictions(predsMap);
+          setSavedMatchIds(savedIds);
         }
       } catch (err) {
         console.error('Failed to load group stage data:', err);
@@ -104,6 +108,11 @@ export default function GroupsPage() {
 
       if (res.ok) {
         setSaveStates((prev) => ({ ...prev, [matchId]: 'saved' }));
+        setSavedMatchIds((prev) => {
+          const next = new Set(prev);
+          next.add(matchId);
+          return next;
+        });
         setTimeout(() => {
           setSaveStates((prev) => ({ ...prev, [matchId]: 'idle' }));
         }, 3000);
@@ -295,8 +304,8 @@ export default function GroupsPage() {
                           </>
                         ) : (
                           <>
-                            <Save className="w-3.5 h-3.5" />
-                            <span>Guardar</span>
+                            {savedMatchIds.has(match.id) ? <Edit2 className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                            <span>{savedMatchIds.has(match.id) ? 'Editar' : 'Guardar'}</span>
                           </>
                         )}
                       </button>

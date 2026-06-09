@@ -12,7 +12,8 @@ import {
   Clock, 
   Save, 
   CheckCircle, 
-  AlertCircle 
+  AlertCircle,
+  Edit2
 } from 'lucide-react';
 
 interface Match {
@@ -39,6 +40,7 @@ export default function HomePage() {
   const [predictions, setPredictions] = useState<Record<number, Prediction>>({});
   const [loading, setLoading] = useState(true);
   const [saveStates, setSaveStates] = useState<Record<number, 'idle' | 'saving' | 'saved' | 'error'>>({});
+  const [savedMatchIds, setSavedMatchIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!user) return;
@@ -63,14 +65,17 @@ export default function HomePage() {
 
           // Populate existing predictions in state
           const predsMap: Record<number, Prediction> = {};
+          const savedIds = new Set<number>();
           (predictionsData.predictions || []).forEach((p: any) => {
             predsMap[p.matchId] = {
               matchId: p.matchId,
               predictedHomeScore: p.predictedHomeScore,
               predictedAwayScore: p.predictedAwayScore,
             };
+            savedIds.add(p.matchId);
           });
           setPredictions(predsMap);
+          setSavedMatchIds(savedIds);
         }
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
@@ -119,6 +124,11 @@ export default function HomePage() {
 
       if (res.ok) {
         setSaveStates((prev) => ({ ...prev, [matchId]: 'saved' }));
+        setSavedMatchIds((prev) => {
+          const next = new Set(prev);
+          next.add(matchId);
+          return next;
+        });
         setTimeout(() => {
           setSaveStates((prev) => ({ ...prev, [matchId]: 'idle' }));
         }, 3000);
@@ -323,8 +333,8 @@ export default function HomePage() {
                             </>
                           ) : (
                             <>
-                              <Save className="w-3.5 h-3.5" />
-                              <span>Predecir</span>
+                              {savedMatchIds.has(match.id) ? <Edit2 className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                              <span>{savedMatchIds.has(match.id) ? 'Editar' : 'Predecir'}</span>
                             </>
                           )}
                         </button>
