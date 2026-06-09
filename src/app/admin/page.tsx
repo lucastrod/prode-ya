@@ -13,7 +13,8 @@ import {
   Plus, 
   Edit2, 
   Save, 
-  UserCheck, 
+  Trash2,
+  UserCheck,
   UserMinus,
   CheckCircle,
   AlertCircle,
@@ -201,24 +202,22 @@ export default function AdminPage() {
     }
   };
 
-  const handleToggleUserActive = async (user: UserData) => {
+  const handleDeleteUser = async (id: string) => {
+    if (!confirm('¿Seguro querés eliminar este usuario? Se borrarán todos sus pronósticos y estadísticas de forma permanente.')) return;
     setActionLoading(true);
     try {
-      const res = await fetch('/api/admin/users', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: user.id,
-          active: !user.active,
-        }),
+      const res = await fetch(`/api/admin/users?id=${id}`, {
+        method: 'DELETE',
       });
       if (res.ok) {
         await loadData();
       } else {
-        alert('Error al desactivar/activar usuario.');
+        const err = await res.json();
+        alert(err.error || 'Error al eliminar usuario.');
       }
     } catch (err) {
       console.error(err);
+      alert('Error al eliminar usuario.');
     } finally {
       setActionLoading(false);
     }
@@ -509,7 +508,6 @@ export default function AdminPage() {
                       <tr className="text-xs font-bold text-gray-400 border-b border-gray-200 dark:border-gray-800 uppercase pb-2">
                         <th className="pb-3">Nombre</th>
                         <th className="pb-3">Rol</th>
-                        <th className="pb-3 text-center">Estado</th>
                         <th className="pb-3 text-right">Acciones</th>
                       </tr>
                     </thead>
@@ -525,11 +523,6 @@ export default function AdminPage() {
                               {u.role}
                             </span>
                           </td>
-                          <td className="py-3 text-center">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${u.active ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                              {u.active ? 'Activo' : 'Inactivo'}
-                            </span>
-                          </td>
                           <td className="py-3 text-right">
                             <div className="flex justify-end gap-2">
                               <button
@@ -542,14 +535,10 @@ export default function AdminPage() {
                                 <Edit2 className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => handleToggleUserActive(u)}
-                                className={`p-1.5 rounded-lg transition-colors ${
-                                  u.active 
-                                    ? 'bg-red-500/10 hover:bg-red-500/20 text-red-500' 
-                                    : 'bg-green-500/10 hover:bg-green-500/20 text-green-500'
-                                }`}
+                                onClick={() => handleDeleteUser(u.id)}
+                                className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors"
                               >
-                                {u.active ? <UserMinus className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </td>

@@ -515,6 +515,27 @@ export const dbClient = {
     throw new Error('User not found in mock store');
   },
 
+  async deleteUser(id: string) {
+    if (isDbConfigured()) {
+      try {
+        return await db.user.delete({
+          where: { id },
+        });
+      } catch (err) {
+        console.error('Prisma delete user failed:', err);
+        throw err;
+      }
+    }
+
+    // Mock
+    const data = mockDb.readMockDB();
+    data.users = data.users.filter((u) => u.id !== id);
+    data.standings = data.standings.filter((s) => s.userId !== id);
+    data.predictions = data.predictions.filter((p) => p.userId !== id);
+    mockDb.writeMockDB(data);
+    return { success: true };
+  },
+
   // --- MATCH OVERRIDES ---
   async saveMatch(matchData: any) {
     if (isDbConfigured()) {

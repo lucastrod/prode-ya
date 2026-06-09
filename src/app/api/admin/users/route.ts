@@ -80,4 +80,28 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const id = request.nextUrl.searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    // Try to delete user in Supabase Auth using Admin Client
+    try {
+      const supabaseAdmin = getSupabaseAdmin();
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
+      if (error) throw error;
+    } catch (supabaseErr) {
+      console.warn('Supabase admin API unavailable, deleting user locally only:', supabaseErr);
+    }
+
+    await dbClient.deleteUser(id);
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
 export const dynamic = 'force-dynamic';
