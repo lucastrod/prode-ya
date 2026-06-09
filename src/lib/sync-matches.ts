@@ -120,55 +120,104 @@ export async function importFixtures() {
 export async function syncMatchResults(apiFootballKey?: string) {
   const now = new Date();
 
-  // If we have a key, we would ordinarily call API-Football.
-  // For the MVP, we support both the API-Football call placeholder and an automated simulation:
-  if (apiFootballKey) {
-    // API-Football Integration implementation details
-    // For now, we perform local updates to demonstrate the automatic flow.
-  }
-
-  // 1. Get all scheduled matches that have passed kickoff
+  // 1. Get all scheduled matches that have passed kickoff or are marked as LIVE
   const matchesToProcess = await db.match.findMany({
     where: {
-      status: MatchStatus.SCHEDULED,
+      status: { in: [MatchStatus.SCHEDULED, MatchStatus.LIVE] },
       matchDate: { lte: now },
     },
   });
 
+  if (matchesToProcess.length === 0) return { lockedCount: 0, finishedCount: 0 };
+
   let lockedCount = 0;
   let finishedCount = 0;
 
+  if (!apiFootballKey) {
+    console.warn('No API_FOOTBALL_KEY provided. Skipping real API fetch.');
+    // Lock them if no API key
+    for (const match of matchesToProcess) {
+      if (match.status === MatchStatus.SCHEDULED) {
+        await db.match.update({
+          where: { id: match.id },
+          data: { status: MatchStatus.LIVE },
+        });
+        lockedCount++;
+      }
+    }
+    return { lockedCount, finishedCount };
+  }
+
+  // Real Integration
+  const today = new Date().toISOString().split('T')[0];
+  let apiData: any;
+
+  try {
+    const response = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}&league=1&season=2026`, {
+      headers: {
+        'x-rapidapi-key': apiFootballKey,
+        'x-rapidapi-host': 'v3.football.api-sports.io'
+      }
+    });
+    apiData = await response.json();
+  } catch (error: any) {
+    console.error('Failed to fetch from API-Football:', error.message);
+    return { lockedCount, finishedCount };
+  }
+
+  if (apiData.errors && Object.keys(apiData.errors).length > 0) {
+    console.error('API-Football Error:', apiData.errors);
+    return { lockedCount, finishedCount };
+  }
+
+  const fixtures = apiData.response || [];
+
   for (const match of matchesToProcess) {
-    const timeDiffMs = now.getTime() - new Date(match.matchDate).getTime();
-    const minutesPassed = timeDiffMs / (1000 * 60);
+    // Try to find this match in the API response
+    // Match criteria: translated API team names equal DB team names
+    const apiMatch = fixtures.find((f: any) => {
+      const apiHomeEs = TEAM_TRANSLATIONS[f.teams.home.name] || f.teams.home.name;
+      const apiAwayEs = TEAM_TRANSLATIONS[f.teams.away.name] || f.teams.away.name;
+      return apiHomeEs === match.homeTeam && apiAwayEs === match.awayTeam;
+    });
 
-    if (minutesPassed >= 120) {
-      // Simulating a finished match after 2 hours (120 min)
-      // Generates a mock score if no score was set
-      const homeScore = Math.floor(Math.random() * 4); // 0-3 goals
-      const awayScore = Math.floor(Math.random() * 4); // 0-3 goals
+    if (apiMatch) {
+      const statusShort = apiMatch.fixture.status.short; // FT, AET, PEN, 1H, 2H, HT...
+      const homeScore = apiMatch.goals.home;
+      const awayScore = apiMatch.goals.away;
 
-      await db.match.update({
-        where: { id: match.id },
-        data: {
-          status: MatchStatus.FINISHED,
-          homeScore,
-          awayScore,
-        },
-      });
-
-      // Recalculate points for this match
-      await recalculateMatchPoints(match.id);
-      finishedCount++;
+      if (['FT', 'AET', 'PEN'].includes(statusShort)) {
+        // Match finished!
+        await db.match.update({
+          where: { id: match.id },
+          data: {
+            status: MatchStatus.FINISHED,
+            homeScore: homeScore !== null ? homeScore : 0,
+            awayScore: awayScore !== null ? awayScore : 0,
+          },
+        });
+        await recalculateMatchPoints(match.id);
+        finishedCount++;
+      } else {
+        // Still live
+        if (match.status === MatchStatus.SCHEDULED) {
+          await db.match.update({
+            where: { id: match.id },
+            data: { status: MatchStatus.LIVE },
+          });
+          lockedCount++;
+        }
+      }
     } else {
-      // Just lock it (mark as LIVE/Locked because kickoff passed but not finished yet)
-      await db.match.update({
-        where: { id: match.id },
-        data: {
-          status: MatchStatus.LIVE,
-        },
-      });
-      lockedCount++;
+      // If we didn't find the match in the API (maybe different day or not returned),
+      // we just make sure it's locked if it passed kickoff
+      if (match.status === MatchStatus.SCHEDULED) {
+        await db.match.update({
+          where: { id: match.id },
+          data: { status: MatchStatus.LIVE },
+        });
+        lockedCount++;
+      }
     }
   }
 
