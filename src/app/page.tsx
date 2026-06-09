@@ -58,7 +58,7 @@ export default function HomePage() {
           // Get next 10 upcoming matches (status SCHEDULED, sorted by date asc)
           const now = new Date();
           const upcoming = (matchesData.matches || [])
-            .filter((m: Match) => m.status === 'SCHEDULED' && new Date(m.matchDate) > now)
+            .filter((m: Match) => m.status === 'SCHEDULED' && new Date(m.matchDate).getTime() - 15 * 60000 > now.getTime())
             .slice(0, 10);
 
           setUpcomingMatches(upcoming);

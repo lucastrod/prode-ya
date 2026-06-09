@@ -89,7 +89,7 @@ export default function PredictionsPage() {
               } else {
                 status = 'Finalizado';
               }
-            } else if (now >= kickoff || match.status === 'LIVE') {
+            } else if (now >= new Date(kickoff.getTime() - 15 * 60000) || match.status === 'LIVE') {
               status = 'Bloqueado';
             } else {
               status = 'Pendiente';

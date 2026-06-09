@@ -187,7 +187,7 @@ export default function GroupsPage() {
           {filteredMatches.map((match) => {
             const pred = predictions[match.id] || { predictedHomeScore: 0, predictedAwayScore: 0 };
             const saveState = saveStates[match.id] || 'idle';
-            const isLocked = new Date() >= new Date(match.matchDate) || match.status !== 'SCHEDULED';
+            const isLocked = new Date() >= new Date(new Date(match.matchDate).getTime() - 15 * 60000) || match.status !== 'SCHEDULED';
             
             return (
               <div key={match.id} className="sya-glass p-6 flex flex-col justify-between relative overflow-hidden transition-all hover:shadow-md">

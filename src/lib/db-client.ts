@@ -187,9 +187,9 @@ export const dbClient = {
         const match = await db.match.findUnique({ where: { id: matchId } });
         if (!match) throw new Error('Match not found');
         
-        // Locked check (kickoff passed)
-        if (new Date() >= new Date(match.matchDate)) {
-          throw new Error('Match is locked. Kickoff has passed.');
+        // Locked check (kickoff passed minus 15 mins)
+        if (new Date() >= new Date(new Date(match.matchDate).getTime() - 15 * 60000)) {
+          throw new Error('El partido está bloqueado. (Cierra 15 min antes del inicio).');
         }
 
         return await db.prediction.upsert({
@@ -219,8 +219,8 @@ export const dbClient = {
     const match = data.matches.find((m) => m.id === matchId);
     if (!match) throw new Error('Match not found');
 
-    if (new Date() >= new Date(match.matchDate)) {
-      throw new Error('Match is locked. Kickoff has passed.');
+    if (new Date() >= new Date(new Date(match.matchDate).getTime() - 15 * 60000)) {
+      throw new Error('El partido está bloqueado. (Cierra 15 min antes del inicio).');
     }
 
     // Upsert mock prediction
