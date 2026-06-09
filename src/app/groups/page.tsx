@@ -80,8 +80,13 @@ export default function GroupsPage() {
       const groupParam = searchParams.get('group');
       const matchParam = searchParams.get('match');
       
-      if (groupParam && GROUPS.includes(groupParam)) {
-        setSelectedGroup(groupParam);
+      let normalizedGroup = groupParam;
+      if (normalizedGroup && normalizedGroup.startsWith('Group ')) {
+        normalizedGroup = normalizedGroup.replace('Group', 'Grupo');
+      }
+
+      if (normalizedGroup && GROUPS.includes(normalizedGroup)) {
+        setSelectedGroup(normalizedGroup);
       }
       
       if (matchParam) {
