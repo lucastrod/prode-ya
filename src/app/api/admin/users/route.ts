@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbClient } from '@/lib/db-client';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { randomUUID } from 'crypto';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    let userId = Math.random().toString(36).substring(7);
+    let userId = randomUUID();
 
     // Try to create user in Supabase Auth using Admin Client
     try {
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
       email,
       role: role || 'USER',
       active: true,
+      password,
     });
 
     return NextResponse.json({ success: true, user });

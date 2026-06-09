@@ -4,6 +4,7 @@ import * as mockDb from './mock-db-store';
 import fs from 'fs';
 import path from 'path';
 import { TEAM_TRANSLATIONS, parseMatchDateTime } from './sync-matches';
+import bcrypt from 'bcryptjs';
 
 const isDbConfigured = () => {
   const url = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL;
@@ -388,11 +389,25 @@ export const dbClient = {
       try {
         return await db.user.upsert({
           where: { id },
-          create: { id, name, email, role: 'USER', passwordHash: 'default' },
+          create: {
+            id,
+            name,
+            email,
+            role: 'USER',
+            passwordHash: 'default',
+            standing: {
+              create: {
+                totalPoints: 0,
+                exactScores: 0,
+                correctOutcomes: 0,
+              }
+            }
+          },
           update: { name, email },
         });
       } catch (err) {
         console.error('Prisma profile sync failed:', err);
+        throw err;
       }
     }
 
@@ -420,6 +435,9 @@ export const dbClient = {
   async saveUser(userData: any) {
     if (isDbConfigured()) {
       try {
+        const passwordHash = userData.password 
+          ? await bcrypt.hash(userData.password, 10) 
+          : 'default';
         return await db.user.create({
           data: {
             id: userData.id,
@@ -427,11 +445,19 @@ export const dbClient = {
             email: userData.email,
             role: userData.role,
             active: userData.active ?? true,
-            passwordHash: 'default',
+            passwordHash,
+            standing: {
+              create: {
+                totalPoints: 0,
+                exactScores: 0,
+                correctOutcomes: 0,
+              }
+            }
           },
         });
       } catch (err) {
         console.error('Prisma save user failed:', err);
+        throw err;
       }
     }
 
@@ -453,17 +479,22 @@ export const dbClient = {
   async updateUser(userData: any) {
     if (isDbConfigured()) {
       try {
+        const dataToUpdate: any = {
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          active: userData.active,
+        };
+        if (userData.password) {
+          dataToUpdate.passwordHash = await bcrypt.hash(userData.password, 10);
+        }
         return await db.user.update({
           where: { id: userData.id },
-          data: {
-            name: userData.name,
-            email: userData.email,
-            role: userData.role,
-            active: userData.active,
-          },
+          data: dataToUpdate,
         });
       } catch (err) {
         console.error('Prisma update user failed:', err);
+        throw err;
       }
     }
 
