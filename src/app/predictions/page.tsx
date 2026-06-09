@@ -10,8 +10,10 @@ import {
   CheckCircle2, 
   AlertTriangle,
   Award,
-  Clock
+  Clock,
+  Edit2
 } from 'lucide-react';
+import Link from 'next/link';
 
 interface Match {
   id: number;
@@ -268,15 +270,23 @@ export default function PredictionsPage() {
 
                     {/* Predicted Score */}
                     <td className="px-6 py-4 text-center">
-                      {row.prediction ? (
-                        <span className="inline-block px-3 py-1.5 bg-gray-500/10 rounded-xl font-extrabold text-sm sm:text-base text-gray-700 dark:text-gray-300">
-                          {row.prediction.predictedHomeScore} - {row.prediction.predictedAwayScore}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-red-500 font-bold italic">
-                          Sin pronóstico
-                        </span>
-                      )}
+                      <div className="flex flex-col items-center gap-1.5">
+                        {row.prediction ? (
+                          <span className="inline-block px-3 py-1.5 bg-gray-500/10 rounded-xl font-extrabold text-sm sm:text-base text-gray-700 dark:text-gray-300">
+                            {row.prediction.predictedHomeScore} - {row.prediction.predictedAwayScore}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-red-500 font-bold italic mt-1">
+                            Sin pronóstico
+                          </span>
+                        )}
+                        {row.status === 'Pendiente' && (
+                          <Link href="/groups" className="text-[10px] text-sya-blue hover:text-sya-orange hover:underline font-bold flex items-center gap-1 transition-colors">
+                            <Edit2 className="w-2.5 h-2.5" />
+                            Modificar
+                          </Link>
+                        )}
+                      </div>
                     </td>
 
                     {/* Official Score */}
