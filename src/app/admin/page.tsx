@@ -516,7 +516,7 @@ export default function AdminPage() {
                         <tr key={u.id} className="hover:bg-gray-500/5">
                           <td className="py-3">
                             <div>{u.name}</div>
-                            <div className="text-xs text-gray-400 font-medium">{u.email}</div>
+                            <div className="text-xs text-gray-400 font-medium">{u.email.split('@')[0]}</div>
                           </td>
                           <td className="py-3">
                             <span className={`text-xs px-2 py-0.5 rounded-full ${u.role === 'ADMIN' ? 'bg-sya-orange/10 text-sya-orange' : 'bg-gray-500/10 text-gray-500'}`}>
