@@ -5,10 +5,14 @@ import { createSession } from '@/lib/session';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
+    let { email, password } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    }
+
+    if (!email.includes('@')) {
+      email = `${email.trim()}@solucionesya.com.ar`;
     }
 
     const user = await db.user.findUnique({

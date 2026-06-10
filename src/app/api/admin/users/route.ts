@@ -14,10 +14,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, role, password } = await request.json();
+    let { name, email, role, password } = await request.json();
     
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if (!email.includes('@')) {
+      email = `${email.trim()}@solucionesya.com.ar`;
     }
 
     let userId: string = randomUUID();

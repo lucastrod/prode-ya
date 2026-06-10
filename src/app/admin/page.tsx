@@ -447,14 +447,14 @@ export default function AdminPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-400 uppercase">Email</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase">Usuario</label>
                     <input
-                      type="email"
+                      type="text"
                       required
                       value={userForm.email}
                       onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
                       className="block w-full py-2.5 px-3.5 bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent text-sm font-semibold"
-                      placeholder="ejemplo@solucionesya.com.ar"
+                      placeholder="Ej. lucas"
                     />
                   </div>
                   <div className="space-y-1.5">

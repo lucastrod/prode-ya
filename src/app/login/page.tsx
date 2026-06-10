@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Sparkles, Mail, Lock, AlertCircle } from 'lucide-react';
+import { Sparkles, User, Lock, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -77,17 +77,17 @@ export default function LoginPage() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-2xl space-y-4">
             <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Correo Electrónico</label>
+              <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 ml-1">Usuario</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400">
-                  <Mail className="w-5 h-5" />
+                  <User className="w-5 h-5" />
                 </span>
                 <input
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-11 pr-4 py-3 bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sya-orange/50 focus:border-sya-orange font-medium text-sm transition-all"
-                  placeholder="nombre@solucionesya.com.ar"
+                  placeholder="Ej. lucas"
                 />
               </div>
             </div>
