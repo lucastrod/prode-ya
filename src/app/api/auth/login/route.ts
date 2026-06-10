@@ -11,8 +11,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
+    email = email.toLowerCase().trim();
+
     if (!email.includes('@')) {
-      email = `${email.trim()}@solucionesya.com.ar`;
+      email = `${email}@solucionesya.com.ar`;
     }
 
     const user = await db.user.findUnique({

@@ -20,8 +20,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    email = email.toLowerCase().trim();
+
     if (!email.includes('@')) {
-      email = `${email.trim()}@solucionesya.com.ar`;
+      email = `${email}@solucionesya.com.ar`;
     }
 
     let userId: string = randomUUID();
