@@ -67,6 +67,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
+    if (userData.email) {
+      userData.email = userData.email.toLowerCase().trim();
+      if (!userData.email.includes('@')) {
+        userData.email = `${userData.email}@solucionesya.com.ar`;
+      }
+    }
+
     // If a password reset is requested, try to apply it in Supabase Auth
     if (userData.password) {
       try {

@@ -527,7 +527,7 @@ export default function AdminPage() {
                             <div className="flex justify-end gap-2">
                               <button
                                 onClick={() => {
-                                  setUserForm({ id: u.id, name: u.name, email: u.email, role: u.role, password: '' });
+                                  setUserForm({ id: u.id, name: u.name, email: u.email.split('@')[0], role: u.role, password: '' });
                                   setEditingId(u.id);
                                 }}
                                 className="p-1.5 bg-sya-blue/10 hover:bg-sya-blue/20 text-sya-blue rounded-lg transition-colors"
