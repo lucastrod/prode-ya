@@ -91,10 +91,15 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-1">
-              <span className="text-xs font-bold text-gray-400 uppercase block">Correo Institucional</span>
+              <span className="text-xs font-bold text-gray-400 uppercase block">Usuario</span>
               <div className="flex items-center gap-2 py-2 px-3 bg-gray-500/5 rounded-xl border border-gray-200 dark:border-gray-800 font-semibold text-sm">
-                <Mail className="w-4 h-4 text-gray-400" />
-                <span className="truncate">{profile.email}</span>
+                <User className="w-4 h-4 text-gray-400" />
+                <span className="truncate">
+                  {(() => {
+                    const raw = profile.email.split('@')[0];
+                    return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+                  })()}
+                </span>
               </div>
             </div>
 

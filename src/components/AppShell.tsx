@@ -200,7 +200,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-sm font-bold truncate">{profile.name}</h2>
-              <span className="text-xs text-gray-400 block truncate">{profile.email}</span>
+              <span className="text-xs text-gray-400 block truncate">
+                {(() => {
+                  const raw = profile.email.split('@')[0];
+                  return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+                })()}
+              </span>
             </div>
           </div>
 
