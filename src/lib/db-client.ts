@@ -591,7 +591,7 @@ export const dbClient = {
         });
 
         if (matchData.status === 'FINISHED') {
-          const { recalculateMatchPoints } = require('./points-engine');
+          const { recalculateMatchPoints } = await import('./points-engine');
           await recalculateMatchPoints(matchData.id);
         }
 
@@ -600,6 +600,7 @@ export const dbClient = {
         console.error('Prisma update match failed:', err);
         throw err;
       }
+    }
 
     // Mock
     const data = mockDb.readMockDB();
