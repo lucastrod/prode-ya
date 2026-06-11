@@ -250,7 +250,8 @@ export default function AdminPage() {
         setEditingId(null);
         await loadData();
       } else {
-        alert('Error al guardar el partido.');
+        const errData = await res.json();
+        alert(`Error al guardar el partido: ${errData.error || 'Desconocido'}`);
       }
     } catch (err) {
       console.error(err);

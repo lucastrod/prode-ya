@@ -598,8 +598,8 @@ export const dbClient = {
         return updated;
       } catch (err) {
         console.error('Prisma update match failed:', err);
+        throw err;
       }
-    }
 
     // Mock
     const data = mockDb.readMockDB();
