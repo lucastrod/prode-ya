@@ -155,17 +155,31 @@ export default function AdminPage() {
   const handleForceSync = async () => {
     setActionLoading(true);
     try {
-      const res = await fetch('/api/cron/sync-results');
+      const res = await fetch('/api/admin/matches/sync-preview');
       const data = await res.json();
-      if (res.ok) {
-        alert(`Sincronización completada. Bloqueados: ${data.results.lockedCount}, Finalizados: ${data.results.finishedCount}`);
+      if (res.ok && data.matches && data.matches.length > 0) {
+        // Tomamos el primer partido que trajo ESPN y lo precargamos en el formulario
+        const suggested = data.matches[0];
+        const original = matchesList.find((m) => m.id === suggested.id);
+        if (original) {
+          setEditingId(suggested.id);
+          setMatchForm({
+            id: original.id,
+            homeTeam: original.homeTeam,
+            awayTeam: original.awayTeam,
+            matchDate: original.matchDate,
+            groupName: original.groupName,
+            status: 'FINISHED',
+            homeScore: String(suggested.homeScore),
+            awayScore: String(suggested.awayScore),
+          });
+        }
       } else {
-        alert('Error en cron sync.');
+        alert('No hay resultados nuevos en ESPN para los partidos pendientes.');
       }
-      await loadData();
     } catch (err) {
       console.error(err);
-      alert('Error en sync.');
+      alert('Error al traer resultados de ESPN.');
     } finally {
       setActionLoading(false);
     }
