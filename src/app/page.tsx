@@ -366,15 +366,15 @@ export default function HomePage() {
               <h3 className="font-extrabold text-sm text-sya-orange uppercase tracking-wider">Cómputo de Puntos</h3>
               <ul className="text-xs space-y-2 font-semibold">
                 <li className="flex items-start gap-2 text-green-500">
-                  <span className="font-bold">3 pts</span>
+                  <span className="font-bold w-10 shrink-0">3 pts</span>
                   <span>Resultado Exacto (ej. predecís 2-1 y sale 2-1).</span>
                 </li>
                 <li className="flex items-start gap-2 text-sya-blue">
-                  <span className="font-bold">1 pt</span>
+                  <span className="font-bold w-10 shrink-0">1 pt</span>
                   <span>Acertar Ganador o Empate sin marcador exacto (ej. predecís 2-1 y sale 1-0).</span>
                 </li>
                 <li className="flex items-start gap-2 text-red-500">
-                  <span className="font-bold">0 pts</span>
+                  <span className="font-bold w-10 shrink-0">0 pts</span>
                   <span>Predicción incorrecta de ganador/empate.</span>
                 </li>
               </ul>
