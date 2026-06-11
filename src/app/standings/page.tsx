@@ -183,17 +183,17 @@ export default function StandingsPage() {
                       </td>
 
                       {/* Points */}
-                      <td className="px-6 py-4 text-center font-extrabold text-base text-sya-orange">
+                      <td className="px-6 py-4 text-center font-black text-2xl text-sya-orange">
                         {row.totalPoints}
                       </td>
 
                       {/* Exacts */}
-                      <td className="px-6 py-4 text-center font-bold text-sm text-green-500">
+                      <td className="px-6 py-4 text-center font-extrabold text-xl text-green-500">
                         {row.exactScores}
                       </td>
 
                       {/* Outcomes */}
-                      <td className="px-6 py-4 text-center font-bold text-sm text-sya-blue">
+                      <td className="px-6 py-4 text-center font-extrabold text-xl text-sya-blue">
                         {row.correctOutcomes}
                       </td>
 
