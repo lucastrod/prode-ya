@@ -17,9 +17,10 @@ interface Match {
 
 interface Prediction {
   matchId: number;
-  predictedHomeScore: number;
-  predictedAwayScore: number;
+  predictedHomeScore: number | '';
+  predictedAwayScore: number | '';
 }
+
 
 const GROUPS = [
   'Grupo A', 'Grupo B', 'Grupo C', 'Grupo D', 'Grupo E', 'Grupo F',
@@ -104,13 +105,32 @@ export default function GroupsPage() {
     }
   }, [loading]);
 
+  const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Allow control/navigation keys: backspace, delete, tab, escape, enter, arrows
+    if ([
+      'Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 
+      'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'
+    ].includes(e.key)) {
+      return;
+    }
+    // Allow clipboard/select shortcuts
+    if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) {
+      return;
+    }
+    // Prevent keypress if not a digit
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   const handleScoreChange = (matchId: number, team: 'home' | 'away', val: string) => {
-    const scoreVal = val === '' ? 0 : Math.max(0, parseInt(val) || 0);
+    const cleanVal = val.replace(/\D/g, '');
+    const scoreVal = cleanVal === '' ? '' : parseInt(cleanVal, 10);
 
     setPredictions((prev) => ({
       ...prev,
       [matchId]: {
-        ...prev[matchId] || { matchId, predictedHomeScore: 0, predictedAwayScore: 0 },
+        ...prev[matchId] || { matchId, predictedHomeScore: '', predictedAwayScore: '' },
         [team === 'home' ? 'predictedHomeScore' : 'predictedAwayScore']: scoreVal,
       },
     }));
@@ -131,10 +151,11 @@ export default function GroupsPage() {
         body: JSON.stringify({
           userId: user.id,
           matchId,
-          predictedHomeScore: pred.predictedHomeScore,
-          predictedAwayScore: pred.predictedAwayScore,
+          predictedHomeScore: pred.predictedHomeScore === '' ? 0 : Number(pred.predictedHomeScore),
+          predictedAwayScore: pred.predictedAwayScore === '' ? 0 : Number(pred.predictedAwayScore),
         }),
       });
+
 
       if (res.ok) {
         setSaveStates((prev) => ({ ...prev, [matchId]: 'saved' }));
@@ -256,12 +277,14 @@ export default function GroupsPage() {
                   {/* Prediction Inputs */}
                   <div className="flex items-center gap-2">
                     <input
-                      type="number"
-                      min="0"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       disabled={isLocked}
                       value={pred.predictedHomeScore}
                       onChange={(e) => handleScoreChange(match.id, 'home', e.target.value)}
-                      className={`w-12 h-12 text-center rounded-xl font-extrabold text-lg focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent transition-all ${
+                      onKeyDown={handleNumericKeyDown}
+                      className={`w-14 h-14 text-center rounded-xl font-black text-2xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent transition-all no-spinner ${
                         isLocked
                           ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed border-none'
                           : 'bg-gray-500/5 border border-gray-200 dark:border-gray-800'
@@ -269,18 +292,21 @@ export default function GroupsPage() {
                     />
                     <span className="text-gray-400 font-extrabold text-xs">vs</span>
                     <input
-                      type="number"
-                      min="0"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       disabled={isLocked}
                       value={pred.predictedAwayScore}
                       onChange={(e) => handleScoreChange(match.id, 'away', e.target.value)}
-                      className={`w-12 h-12 text-center rounded-xl font-extrabold text-lg focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent transition-all ${
+                      onKeyDown={handleNumericKeyDown}
+                      className={`w-14 h-14 text-center rounded-xl font-black text-2xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent transition-all no-spinner ${
                         isLocked
                           ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed border-none'
                           : 'bg-gray-500/5 border border-gray-200 dark:border-gray-800'
                       }`}
                     />
                   </div>
+
 
                   {/* Away Team */}
                   <div className="flex-1 text-left font-extrabold text-sm sm:text-base pl-1 truncate">
