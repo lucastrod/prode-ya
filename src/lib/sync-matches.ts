@@ -172,17 +172,32 @@ export async function syncMatchResults(apiFootballKey?: string) {
       
       const homeScore = parseInt(homeTeamNode.score, 10);
       const awayScore = parseInt(awayTeamNode.score, 10);
+      const statusShort = apiMatch.status.type.shortDetail;
       
-      // Update the score in DB, but KEEP status as LIVE so Admin can manually FINISH it.
-      await db.match.update({
-        where: { id: match.id },
-        data: {
-          status: MatchStatus.LIVE,
-          homeScore: isNaN(homeScore) ? null : homeScore,
-          awayScore: isNaN(awayScore) ? null : awayScore,
-        },
-      });
-      if (match.status === MatchStatus.SCHEDULED) lockedCount++;
+      if (['FT', 'AET', 'PEN'].includes(statusShort)) {
+        // Match finished officially!
+        await db.match.update({
+          where: { id: match.id },
+          data: {
+            status: MatchStatus.FINISHED,
+            homeScore: isNaN(homeScore) ? null : homeScore,
+            awayScore: isNaN(awayScore) ? null : awayScore,
+          },
+        });
+        await recalculateMatchPoints(match.id);
+        finishedCount++;
+      } else {
+        // Update the score in DB, but KEEP status as LIVE
+        await db.match.update({
+          where: { id: match.id },
+          data: {
+            status: MatchStatus.LIVE,
+            homeScore: isNaN(homeScore) ? null : homeScore,
+            awayScore: isNaN(awayScore) ? null : awayScore,
+          },
+        });
+        if (match.status === MatchStatus.SCHEDULED) lockedCount++;
+      }
     } else {
       // If we didn't find the match in the API, we just lock it if it passed kickoff
       if (match.status === MatchStatus.SCHEDULED) {
