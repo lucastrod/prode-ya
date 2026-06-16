@@ -173,6 +173,10 @@ export default function AdminPage() {
             homeScore: String(suggested.homeScore),
             awayScore: String(suggested.awayScore),
           });
+          setTimeout(() => {
+            const el = document.getElementById(`match_${suggested.id}`) || document.getElementById(`match_mob_${suggested.id}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 100);
         }
       } else {
         alert('No hay resultados nuevos en ESPN para los partidos pendientes.');
@@ -718,7 +722,7 @@ export default function AdminPage() {
                 Ingresá los marcadores de los partidos finalizados. Al guardar, el sistema calculará los puntos de los pronósticos de los usuarios automáticamente.
               </p>
               
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-xs font-bold text-gray-400 border-b border-gray-200 dark:border-gray-800 uppercase pb-2">
@@ -732,7 +736,7 @@ export default function AdminPage() {
                     {matchesList.map((m) => {
                       const isEditingThis = editingId === m.id;
                       return (
-                        <tr key={m.id} className="hover:bg-gray-500/5">
+                        <tr id={`match_${m.id}`} key={m.id} className="hover:bg-gray-500/5">
                           <td className="py-4">
                             <div>{m.homeTeam} vs {m.awayTeam}</div>
                             <div className="text-xs text-gray-400 font-medium">{m.groupName} • {new Date(m.matchDate).toLocaleString('es-AR')}</div>
@@ -817,6 +821,93 @@ export default function AdminPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-4">
+                {matchesList.map((m) => {
+                  const isEditingThis = editingId === m.id;
+                  return (
+                    <div id={`match_mob_${m.id}`} key={`mob_${m.id}`} className="bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-xl p-4 flex flex-col gap-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-bold text-sm">{m.homeTeam} vs {m.awayTeam}</div>
+                          <div className="text-xs text-gray-400">{m.groupName} • {new Date(m.matchDate).toLocaleDateString('es-AR')}</div>
+                        </div>
+                        <span className={`text-[9px] px-2 py-0.5 font-bold uppercase rounded-full ${
+                          m.status === 'FINISHED' ? 'badge-finished' : m.status === 'LIVE' ? 'badge-live' : 'badge-pending'
+                        }`}>
+                          {m.status === 'FINISHED' ? 'Finalizado' : m.status === 'LIVE' ? 'En Juego' : 'Pendiente'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-800">
+                        {isEditingThis ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min="0"
+                              value={matchForm.homeScore}
+                              onChange={(e) => setMatchForm({ ...matchForm, homeScore: e.target.value })}
+                              className="w-12 h-10 text-center bg-gray-500/10 border border-gray-300 dark:border-gray-700 rounded-lg text-base font-black focus:outline-none"
+                            />
+                            <span className="font-bold text-gray-400">-</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={matchForm.awayScore}
+                              onChange={(e) => setMatchForm({ ...matchForm, awayScore: e.target.value })}
+                              className="w-12 h-10 text-center bg-gray-500/10 border border-gray-300 dark:border-gray-700 rounded-lg text-base font-black focus:outline-none"
+                            />
+                          </div>
+                        ) : (
+                          <div className="font-black text-xl text-sya-blue">
+                            {m.homeScore !== null ? `${m.homeScore} - ${m.awayScore}` : '-'}
+                          </div>
+                        )}
+
+                        <div>
+                          {isEditingThis ? (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="px-3 py-2 bg-gray-500/20 text-gray-400 font-bold text-xs rounded-xl"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                onClick={handleSaveMatch}
+                                disabled={actionLoading}
+                                className="px-3 py-2 bg-green-500 text-white font-bold text-xs rounded-xl flex items-center gap-1"
+                              >
+                                <Save className="w-3.5 h-3.5" /> Guardar
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setMatchForm({
+                                  id: m.id,
+                                  homeTeam: m.homeTeam,
+                                  awayTeam: m.awayTeam,
+                                  matchDate: m.matchDate,
+                                  groupName: m.groupName,
+                                  status: 'FINISHED',
+                                  homeScore: m.homeScore !== null ? String(m.homeScore) : '0',
+                                  awayScore: m.awayScore !== null ? String(m.awayScore) : '0',
+                                });
+                                setEditingId(m.id);
+                              }}
+                              className="px-4 py-2 bg-sya-orange/10 text-sya-orange font-bold text-xs rounded-xl"
+                            >
+                              Cargar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
