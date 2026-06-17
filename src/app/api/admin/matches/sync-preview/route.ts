@@ -49,6 +49,10 @@ export async function GET(request: Request) {
       });
 
       if (apiMatch) {
+        // Only process matches ESPN confirms are officially finished
+        const statusShort = apiMatch.status?.type?.shortDetail ?? '';
+        if (!['FT', 'AET', 'PEN'].includes(statusShort)) continue;
+
         const comps = apiMatch.competitions[0].competitors;
         const homeTeamNode = comps.find((c: any) => c.homeAway === 'home');
         const awayTeamNode = comps.find((c: any) => c.homeAway === 'away');
