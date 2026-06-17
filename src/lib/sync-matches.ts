@@ -19,6 +19,7 @@ export const TEAM_TRANSLATIONS: Record<string, string> = {
   "Curaçao": "Curazao",
   "Czech Republic": "República Checa",
   "DR Congo": "República Democrática del Congo",
+  "Congo DR": "República Democrática del Congo",
   "Ecuador": "Ecuador",
   "Egypt": "Egipto",
   "England": "Inglaterra",
