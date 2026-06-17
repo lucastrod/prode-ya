@@ -72,6 +72,7 @@ export default function AdminPage() {
   
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [syncToast, setSyncToast] = useState<{ matches: string[]; visible: boolean } | null>(null);
 
   // Forms
   const [userForm, setUserForm] = useState<{ id: string; name: string; email: string; role: 'USER' | 'ADMIN'; password: string }>({ id: '', name: '', email: '', role: 'USER', password: '' });
@@ -154,36 +155,56 @@ export default function AdminPage() {
 
   const handleForceSync = async () => {
     setActionLoading(true);
+    // Reset cualquier edición abierta para que la tabla no quede en modo edición
+    setEditingId(null);
+    setMatchForm({ id: 0, homeTeam: '', awayTeam: '', matchDate: '', groupName: 'Grupo A', status: 'SCHEDULED', homeScore: '', awayScore: '' });
     try {
       const res = await fetch('/api/admin/matches/sync-preview');
       const data = await res.json();
       if (res.ok && data.matches && data.matches.length > 0) {
-        // Tomamos el primer partido que trajo ESPN y lo precargamos en el formulario
-        const suggested = data.matches[0];
-        const original = matchesList.find((m) => m.id === suggested.id);
-        if (original) {
-          setEditingId(suggested.id);
-          setMatchForm({
-            id: original.id,
-            homeTeam: original.homeTeam,
-            awayTeam: original.awayTeam,
-            matchDate: original.matchDate,
-            groupName: original.groupName,
-            status: 'FINISHED',
-            homeScore: String(suggested.homeScore),
-            awayScore: String(suggested.awayScore),
+        const savedMatches: string[] = [];
+        for (const suggested of data.matches) {
+          const original = matchesList.find((m) => m.id === suggested.id);
+          if (!original) continue;
+
+          const saveRes = await fetch('/api/admin/matches', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: original.id,
+              homeTeam: original.homeTeam,
+              awayTeam: original.awayTeam,
+              matchDate: original.matchDate,
+              groupName: original.groupName,
+              status: 'FINISHED',
+              homeScore: Number(suggested.homeScore),
+              awayScore: Number(suggested.awayScore),
+            }),
           });
-          setTimeout(() => {
-            const el = document.getElementById(`match_${suggested.id}`) || document.getElementById(`match_mob_${suggested.id}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 100);
+
+          if (saveRes.ok) {
+            savedMatches.push(`${original.homeTeam} ${suggested.homeScore} - ${suggested.awayScore} ${original.awayTeam}`);
+          } else {
+            const errData = await saveRes.json();
+            console.error(`Error guardando partido ${original.id}:`, errData.error);
+          }
+        }
+
+        // Reset nuevamente antes de recargar para evitar estado residual
+        setEditingId(null);
+        setMatchForm({ id: 0, homeTeam: '', awayTeam: '', matchDate: '', groupName: 'Grupo A', status: 'SCHEDULED', homeScore: '', awayScore: '' });
+        await loadData();
+
+        if (savedMatches.length > 0) {
+          setSyncToast({ matches: savedMatches, visible: true });
+          setTimeout(() => setSyncToast(null), 8000);
         }
       } else {
-        alert('No hay resultados nuevos en ESPN para los partidos pendientes.');
+        setSyncToast({ matches: [], visible: true });
+        setTimeout(() => setSyncToast(null), 4000);
       }
     } catch (err) {
       console.error(err);
-      alert('Error al traer resultados de ESPN.');
     } finally {
       setActionLoading(false);
     }
@@ -351,6 +372,7 @@ export default function AdminPage() {
   if (!profile || profile.role !== 'ADMIN') return null;
 
   return (
+    <>
     <div className="space-y-6 pb-12">
       
       {/* Title */}
@@ -1043,6 +1065,45 @@ export default function AdminPage() {
       )}
 
     </div>
+
+      {/* Sync Toast Notification */}
+      {syncToast?.visible && (
+        <div className="fixed bottom-6 right-6 z-50 animate-slide-up" style={{ maxWidth: '360px' }}>
+          <div className="bg-gray-900 border border-green-500/30 rounded-2xl shadow-2xl p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+                  <CheckCircle className="w-4 h-4 text-green-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-extrabold text-white">
+                    {syncToast.matches.length > 0 ? 'Resultados sincronizados' : 'Sin resultados nuevos'}
+                  </p>
+                  <p className="text-xs text-gray-400 font-medium">ESPN · Automático</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSyncToast(null)}
+                className="text-gray-500 hover:text-white text-lg leading-none shrink-0"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            {syncToast.matches.length > 0 && (
+              <ul className="space-y-1.5 border-t border-gray-700 pt-3">
+                {syncToast.matches.map((m, i) => (
+                  <li key={i} className="text-xs font-bold text-green-400 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                    {m}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 export const dynamic = 'force-dynamic';
