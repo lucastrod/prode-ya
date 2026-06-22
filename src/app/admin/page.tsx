@@ -74,6 +74,10 @@ export default function AdminPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [syncToast, setSyncToast] = useState<{ matches: string[]; visible: boolean } | null>(null);
 
+  // Filters for matches and results
+  const [filterStage, setFilterStage] = useState<string>('ALL');
+  const [filterStatus, setFilterStatus] = useState<string>('ALL');
+
   // Forms
   const [userForm, setUserForm] = useState<{ id: string; name: string; email: string; role: 'USER' | 'ADMIN'; password: string }>({ id: '', name: '', email: '', role: 'USER', password: '' });
   const [matchForm, setMatchForm] = useState<{ id: number; homeTeam: string; awayTeam: string; matchDate: string; groupName: string; status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'CANCELLED'; homeScore: string; awayScore: string }>({ id: 0, homeTeam: '', awayTeam: '', matchDate: '', groupName: 'Grupo A', status: 'SCHEDULED', homeScore: '', awayScore: '' });
@@ -153,6 +157,44 @@ export default function AdminPage() {
     }
   };
 
+  const handleGenerateKnockout = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/knockout/generate', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`✅ ${data.message}\n\nCreados:\n${(data.created || []).join('\n') || 'Ninguno nuevo'}`);
+        await loadData();
+      } else {
+        alert('❌ Error: ' + (data.error || 'desconocido'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error al generar el bracket.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResolveKnockout = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/knockout/resolve', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`✅ ${data.message}\n\nResueltos:\n${(data.resolved || []).join('\n') || 'Ninguno nuevo'}\n\nPendientes:\n${(data.skipped || []).join('\n') || 'Ninguno'}`);
+        await loadData();
+      } else {
+        alert('❌ Error: ' + (data.error || 'desconocido'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error al resolver cruces.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleForceSync = async () => {
     setActionLoading(true);
     // Reset cualquier edición abierta para que la tabla no quede en modo edición
@@ -179,6 +221,7 @@ export default function AdminPage() {
               status: 'FINISHED',
               homeScore: Number(suggested.homeScore),
               awayScore: Number(suggested.awayScore),
+              ...(suggested.penaltyWinner ? { penaltyWinner: suggested.penaltyWinner } : {}),
             }),
           });
 
@@ -369,6 +412,18 @@ export default function AdminPage() {
     }
   };
 
+  const filteredMatchesList = matchesList.filter((m) => {
+    // 1. Status Filter
+    if (filterStatus === 'PENDING' && m.status !== 'SCHEDULED') return false;
+    if (filterStatus === 'LIVE' && m.status !== 'LIVE') return false;
+    if (filterStatus === 'FINISHED' && m.status !== 'FINISHED') return false;
+
+    // 2. Stage / Group Filter
+    if (filterStage === 'ALL') return true;
+    if (filterStage === 'GROUP_ALL') return m.groupName.startsWith('Grupo') || m.groupName.startsWith('Group');
+    return m.groupName === filterStage || m.groupName === filterStage.replace('Grupo', 'Group') || m.groupName === filterStage.replace('Group', 'Grupo');
+  });
+
   if (!profile || profile.role !== 'ADMIN') return null;
 
   return (
@@ -397,12 +452,28 @@ export default function AdminPage() {
             Importar Fixture (Grupo)
           </button>
           <button
+            onClick={handleGenerateKnockout}
+            disabled={actionLoading}
+            className="py-2.5 px-4 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <Database className="w-4 h-4" />
+            Generar Bracket
+          </button>
+          <button
+            onClick={handleResolveKnockout}
+            disabled={actionLoading}
+            className="py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <CheckCircle className="w-4 h-4" />
+            Resolver Cruces
+          </button>
+          <button
             onClick={handleForceSync}
             disabled={actionLoading}
             className="py-2.5 px-4 sya-button-primary text-xs flex items-center gap-1.5 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${actionLoading ? 'animate-spin' : ''}`} />
-            Sincronizar Resultados (Cron)
+            Sincronizar Resultados
           </button>
         </div>
       </div>
@@ -436,6 +507,54 @@ export default function AdminPage() {
           );
         })}
       </div>
+
+      {(activeTab === 'matches' || activeTab === 'results') && (
+        <div className="flex flex-wrap gap-4 bg-gray-500/5 p-4 rounded-xl items-center animate-slide-up">
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-gray-400 uppercase block">Grupo / Fase</span>
+            <select
+              value={filterStage}
+              onChange={(e) => setFilterStage(e.target.value)}
+              className="block w-48 py-1.5 px-3 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none"
+            >
+              <option value="ALL">Todos los grupos/fases</option>
+              <option value="GROUP_ALL">Toda la Fase de Grupos</option>
+              <option value="Grupo A">Grupo A</option>
+              <option value="Grupo B">Grupo B</option>
+              <option value="Grupo C">Grupo C</option>
+              <option value="Grupo D">Grupo D</option>
+              <option value="Grupo E">Grupo E</option>
+              <option value="Grupo F">Grupo F</option>
+              <option value="Grupo G">Grupo G</option>
+              <option value="Grupo H">Grupo H</option>
+              <option value="Grupo I">Grupo I</option>
+              <option value="Grupo J">Grupo J</option>
+              <option value="Grupo K">Grupo K</option>
+              <option value="Grupo L">Grupo L</option>
+              <option value="Round of 32">Round of 32</option>
+              <option value="Round of 16">Octavos de Final</option>
+              <option value="Cuartos de Final">Cuartos de Final</option>
+              <option value="Semifinales">Semifinales</option>
+              <option value="3er Puesto">3er Puesto</option>
+              <option value="Gran Final">Gran Final</option>
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-gray-400 uppercase block">Estado</span>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="block w-48 py-1.5 px-3 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-semibold focus:outline-none"
+            >
+              <option value="ALL">Todos los estados</option>
+              <option value="PENDING">Pendientes</option>
+              <option value="LIVE">En Juego</option>
+              <option value="FINISHED">Finalizados</option>
+            </select>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="sya-glass p-20 text-center text-gray-400 font-semibold animate-pulse">
@@ -688,7 +807,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-800 text-sm font-semibold">
-                      {matchesList.map((m) => (
+                      {filteredMatchesList.map((m) => (
                         <tr key={m.id} className="hover:bg-gray-500/5">
                           <td className="py-3">
                             <span className="font-extrabold">{m.homeTeam} vs {m.awayTeam}</span>
@@ -755,7 +874,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-800 text-sm font-semibold">
-                    {matchesList.map((m) => {
+                    {filteredMatchesList.map((m) => {
                       const isEditingThis = editingId === m.id;
                       return (
                         <tr id={`match_${m.id}`} key={m.id} className="hover:bg-gray-500/5">
@@ -847,7 +966,7 @@ export default function AdminPage() {
 
               {/* Mobile Cards */}
               <div className="md:hidden space-y-4">
-                {matchesList.map((m) => {
+                {filteredMatchesList.map((m) => {
                   const isEditingThis = editingId === m.id;
                   return (
                     <div id={`match_mob_${m.id}`} key={`mob_${m.id}`} className="bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-xl p-4 flex flex-col gap-3">

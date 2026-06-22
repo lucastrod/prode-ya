@@ -75,6 +75,13 @@ export async function GET(request: NextRequest) {
       const statusShort = apiMatch.status?.type?.shortDetail ?? '';
       if (!['FT', 'AET', 'PEN'].includes(statusShort)) continue;
 
+      // For penalty shootouts: homeScore/awayScore = score at end of AET (the draw).
+      // penaltyWinner records who advanced — does NOT affect prediction scoring.
+      let penaltyWinner: string | null = null;
+      if (statusShort === 'PEN') {
+        penaltyWinner = homeScore > awayScore ? 'home' : 'away';
+      }
+
       // Save as FINISHED with current score — same as pressing the button
       await db.match.update({
         where: { id: match.id },
@@ -82,6 +89,7 @@ export async function GET(request: NextRequest) {
           status: MatchStatus.FINISHED,
           homeScore,
           awayScore,
+          ...(penaltyWinner ? { penaltyWinner } : {}),
         },
       });
 
