@@ -133,9 +133,6 @@ export default function KnockoutPage() {
           (m: KnockoutMatch) => m.stage !== 'GROUP'
         );
         setMatches(all);
-        // Auto-select most advanced stage with data
-        const stages = STAGE_ORDER.filter((s) => all.some((m) => m.stage === s));
-        if (stages.length > 0) setActiveStage(stages[stages.length - 1]);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
