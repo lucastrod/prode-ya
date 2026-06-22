@@ -153,6 +153,44 @@ export default function AdminPage() {
     }
   };
 
+  const handleGenerateKnockout = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/knockout/generate', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`✅ ${data.message}\n\nCreados:\n${(data.created || []).join('\n') || 'Ninguno nuevo'}`);
+        await loadData();
+      } else {
+        alert('❌ Error: ' + (data.error || 'desconocido'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error al generar el bracket.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResolveKnockout = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/knockout/resolve', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`✅ ${data.message}\n\nResueltos:\n${(data.resolved || []).join('\n') || 'Ninguno nuevo'}\n\nPendientes:\n${(data.skipped || []).join('\n') || 'Ninguno'}`);
+        await loadData();
+      } else {
+        alert('❌ Error: ' + (data.error || 'desconocido'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error al resolver cruces.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleForceSync = async () => {
     setActionLoading(true);
     // Reset cualquier edición abierta para que la tabla no quede en modo edición
@@ -398,12 +436,28 @@ export default function AdminPage() {
             Importar Fixture (Grupo)
           </button>
           <button
+            onClick={handleGenerateKnockout}
+            disabled={actionLoading}
+            className="py-2.5 px-4 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <Database className="w-4 h-4" />
+            Generar Bracket
+          </button>
+          <button
+            onClick={handleResolveKnockout}
+            disabled={actionLoading}
+            className="py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <CheckCircle className="w-4 h-4" />
+            Resolver Cruces
+          </button>
+          <button
             onClick={handleForceSync}
             disabled={actionLoading}
             className="py-2.5 px-4 sya-button-primary text-xs flex items-center gap-1.5 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${actionLoading ? 'animate-spin' : ''}`} />
-            Sincronizar Resultados (Cron)
+            Sincronizar Resultados
           </button>
         </div>
       </div>
