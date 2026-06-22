@@ -5,6 +5,7 @@ import { MatchStatus, Stage } from '@prisma/client';
 import { recalculateMatchPoints } from './points-engine';
 
 export const TEAM_TRANSLATIONS: Record<string, string> = {
+  // fixture keys (openfootball)
   "Algeria": "Argelia",
   "Argentina": "Argentina",
   "Australia": "Australia",
@@ -19,7 +20,6 @@ export const TEAM_TRANSLATIONS: Record<string, string> = {
   "Curaçao": "Curazao",
   "Czech Republic": "República Checa",
   "DR Congo": "República Democrática del Congo",
-  "Congo DR": "República Democrática del Congo",
   "Ecuador": "Ecuador",
   "Egypt": "Egipto",
   "England": "Inglaterra",
@@ -53,7 +53,13 @@ export const TEAM_TRANSLATIONS: Record<string, string> = {
   "Turkey": "Turquía",
   "USA": "Estados Unidos",
   "Uruguay": "Uruguay",
-  "Uzbekistan": "Uzbekistán"
+  "Uzbekistan": "Uzbekistán",
+  // ESPN displayName variants (verified from live API scan Jun 11-21 2026)
+  "Congo DR": "República Democrática del Congo",
+  "Bosnia-Herzegovina": "Bosnia y Herzegovina",
+  "Czechia": "República Checa",
+  "Türkiye": "Turquía",
+  "United States": "Estados Unidos",
 };
 
 export function parseMatchDateTime(dateStr: string, timeStr: string): Date {
