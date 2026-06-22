@@ -315,15 +315,15 @@ export default function GroupsPage() {
                     </div>
 
                     {/* Main Score Prediction Layout */}
-                    <div className="flex items-center justify-between gap-4 py-2">
+                    <div className="flex items-center justify-between gap-1.5 sm:gap-4 py-2">
                       
                       {/* Home Team */}
-                      <div className="flex-1 text-right font-extrabold text-sm sm:text-base pr-1 truncate">
+                      <div className="flex-1 text-right font-extrabold text-xs sm:text-sm md:text-base pr-1 truncate">
                         {match.homeTeam}
                       </div>
 
                       {/* Prediction Inputs */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                         <input
                           type="text"
                           inputMode="numeric"
@@ -332,13 +332,13 @@ export default function GroupsPage() {
                           value={pred.predictedHomeScore}
                           onChange={(e) => handleScoreChange(match.id, 'home', e.target.value)}
                           onKeyDown={handleNumericKeyDown}
-                          className={`w-14 h-14 text-center rounded-xl font-black text-2xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent transition-all no-spinner ${
+                          className={`w-11 h-11 sm:w-14 sm:h-14 text-center rounded-xl font-black text-lg sm:text-2xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent transition-all no-spinner ${
                             isLocked
                               ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed border-none'
                               : 'bg-gray-500/5 border border-gray-200 dark:border-gray-800'
                           }`}
                         />
-                        <span className="text-gray-400 font-extrabold text-xs">vs</span>
+                        <span className="text-gray-400 font-extrabold text-[10px] sm:text-xs">vs</span>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -347,7 +347,7 @@ export default function GroupsPage() {
                           value={pred.predictedAwayScore}
                           onChange={(e) => handleScoreChange(match.id, 'away', e.target.value)}
                           onKeyDown={handleNumericKeyDown}
-                          className={`w-14 h-14 text-center rounded-xl font-black text-2xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent transition-all no-spinner ${
+                          className={`w-11 h-11 sm:w-14 sm:h-14 text-center rounded-xl font-black text-lg sm:text-2xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent transition-all no-spinner ${
                             isLocked
                               ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed border-none'
                               : 'bg-gray-500/5 border border-gray-200 dark:border-gray-800'
@@ -356,7 +356,7 @@ export default function GroupsPage() {
                       </div>
 
                       {/* Away Team */}
-                      <div className="flex-1 text-left font-extrabold text-sm sm:text-base pl-1 truncate">
+                      <div className="flex-1 text-left font-extrabold text-xs sm:text-sm md:text-base pl-1 truncate">
                         {match.awayTeam}
                       </div>
 
