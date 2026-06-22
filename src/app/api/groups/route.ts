@@ -19,7 +19,7 @@ export interface GroupStanding {
   teams: TeamStanding[];
 }
 
-function buildGroupStandings(matches: any[]): GroupStanding[] {
+export function buildGroupStandings(matches: any[]): GroupStanding[] {
   const groups: Record<string, Record<string, TeamStanding>> = {};
 
   for (const match of matches) {
