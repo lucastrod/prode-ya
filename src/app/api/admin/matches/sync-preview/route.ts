@@ -61,10 +61,17 @@ export async function GET(request: Request) {
         const awayScore = parseInt(awayTeamNode.score, 10);
         
         if (!isNaN(homeScore) && !isNaN(awayScore)) {
+          // For PEN: homeScore/awayScore = score at end of AET (the draw).
+          // penaltyWinner records who advanced, does NOT affect prediction scoring.
+          let penaltyWinner: string | null = null;
+          if (statusShort === 'PEN') {
+            penaltyWinner = homeScore > awayScore ? 'home' : 'away';
+          }
           suggestedMatches.push({
             id: match.id,
             homeScore,
             awayScore,
+            penaltyWinner,
           });
         }
       }

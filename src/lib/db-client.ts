@@ -587,6 +587,7 @@ export const dbClient = {
             status: matchData.status,
             homeScore: matchData.homeScore !== undefined ? matchData.homeScore : undefined,
             awayScore: matchData.awayScore !== undefined ? matchData.awayScore : undefined,
+            ...(matchData.penaltyWinner !== undefined ? { penaltyWinner: matchData.penaltyWinner } : {}),
           },
         });
 

@@ -179,6 +179,7 @@ export default function AdminPage() {
               status: 'FINISHED',
               homeScore: Number(suggested.homeScore),
               awayScore: Number(suggested.awayScore),
+              ...(suggested.penaltyWinner ? { penaltyWinner: suggested.penaltyWinner } : {}),
             }),
           });
 
