@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Clock, Lock, Save, CheckCircle, AlertCircle, Calendar, Edit2, TrendingUp } from 'lucide-react';
+import { Clock, Lock, Save, CheckCircle, AlertCircle, Calendar, Edit2, TrendingUp, Eye } from 'lucide-react';
+import OtherPredictionsModal from '@/components/OtherPredictionsModal';
 
 interface Match {
   id: number;
@@ -53,6 +54,7 @@ export default function GroupsPage() {
   const [loading, setLoading] = useState(true);
   const [saveStates, setSaveStates] = useState<Record<number, 'idle' | 'saving' | 'saved' | 'error'>>({});
   const [savedMatchIds, setSavedMatchIds] = useState<Set<number>>(new Set());
+  const [selectedMatchForAudit, setSelectedMatchForAudit] = useState<Match | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -415,9 +417,13 @@ export default function GroupsPage() {
                             )}
                           </button>
                         ) : (
-                          <span className="text-xs text-gray-400 font-bold block bg-gray-500/10 px-3 py-1.5 rounded-lg">
-                            🔒 Pronóstico Cerrado
-                          </span>
+                          <button
+                            onClick={() => setSelectedMatchForAudit(match)}
+                            className="px-3 py-1.5 bg-sya-orange/10 hover:bg-sya-orange/20 text-sya-orange font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Ver Prodes</span>
+                          </button>
                         )}
                       </div>
 
@@ -486,6 +492,19 @@ export default function GroupsPage() {
             </div>
           )}
         </div>
+      )}
+
+      {selectedMatchForAudit && (
+        <OtherPredictionsModal
+          isOpen={!!selectedMatchForAudit}
+          onClose={() => setSelectedMatchForAudit(null)}
+          matchId={selectedMatchForAudit.id}
+          homeTeam={selectedMatchForAudit.homeTeam}
+          awayTeam={selectedMatchForAudit.awayTeam}
+          matchDate={selectedMatchForAudit.matchDate}
+          homeScore={selectedMatchForAudit.homeScore}
+          awayScore={selectedMatchForAudit.awayScore}
+        />
       )}
     </div>
   );

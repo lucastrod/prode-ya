@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Swords, Trophy, Clock, CheckCircle } from 'lucide-react';
+import { Swords, Trophy, Clock, CheckCircle, Eye } from 'lucide-react';
+import OtherPredictionsModal from '@/components/OtherPredictionsModal';
 
 interface KnockoutMatch {
   id: number;
@@ -27,10 +28,14 @@ const STAGE_LABELS: Record<string, string> = {
 
 const STAGE_ORDER = ['ROUND_32', 'ROUND_16', 'QUARTER', 'SEMI', 'THIRD_PLACE', 'FINAL'];
 
-function MatchCard({ match }: { match: KnockoutMatch }) {
+function MatchCard({ match, onShowPredictions }: { match: KnockoutMatch; onShowPredictions?: (m: KnockoutMatch) => void }) {
   const isFinished = match.status === 'FINISHED';
   const isLive = match.status === 'LIVE';
   const isPlaceholder = match.homeTeam.startsWith('[') || match.awayTeam.startsWith('[');
+
+  const matchDate = new Date(match.matchDate);
+  const now = new Date();
+  const isLocked = now >= new Date(matchDate.getTime() - 15 * 60000) || match.status === 'LIVE' || match.status === 'FINISHED';
 
   const getWinner = (side: 'home' | 'away') => {
     if (!isFinished || match.homeScore === null || match.awayScore === null) return false;
@@ -52,70 +57,82 @@ function MatchCard({ match }: { match: KnockoutMatch }) {
   };
 
   return (
-    <div className={`sya-glass overflow-hidden transition-all duration-300 hover:translate-y-[-2px] ${
+    <div className={`sya-glass overflow-hidden transition-all duration-300 hover:translate-y-[-2px] flex flex-col justify-between ${
       isLive ? 'ring-2 ring-amber-400' : isFinished ? 'ring-1 ring-emerald-400/30' : ''
     }`}>
-      {/* Status + Date header */}
-      <div className={`px-4 py-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider border-b border-gray-200 dark:border-gray-800 ${
-        isLive ? 'bg-amber-400/10 text-amber-400' : isFinished ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/5 text-gray-400'
-      }`}>
-        <span className="flex items-center gap-1">
-          {isLive && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />}
-          {isFinished && <CheckCircle className="w-3 h-3" />}
-          {!isFinished && !isLive && <Clock className="w-3 h-3" />}
-          {isLive ? 'En Juego' : isFinished ? 'Finalizado' : 'Programado'}
-        </span>
-        <span>{formatDate(match.matchDate)}</span>
+      <div>
+        {/* Status + Date header */}
+        <div className={`px-4 py-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider border-b border-gray-200 dark:border-gray-800 ${
+          isLive ? 'bg-amber-400/10 text-amber-400' : isFinished ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/5 text-gray-400'
+        }`}>
+          <span className="flex items-center gap-1">
+            {isLive && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />}
+            {isFinished && <CheckCircle className="w-3 h-3" />}
+            {!isFinished && !isLive && <Clock className="w-3 h-3" />}
+            {isLive ? 'En Juego' : isFinished ? 'Finalizado' : 'Programado'}
+          </span>
+          <span>{formatDate(match.matchDate)}</span>
+        </div>
+
+        {/* Teams */}
+        <div className="px-4 py-3 space-y-2">
+          {/* Home */}
+          <div className={`flex items-center justify-between gap-2 ${
+            isFinished && !homeWins ? 'opacity-50' : ''
+          }`}>
+            <span className={`font-bold text-sm truncate flex-1 ${
+              homeWins ? 'text-sya-orange' : ''
+            } ${isPlaceholder && match.homeTeam.startsWith('[') ? 'text-gray-400 italic text-xs' : ''}`}>
+              {match.homeTeam.replace(/^\[|\]$/g, '')}
+            </span>
+            {isFinished && (
+              <span className={`text-lg font-black w-7 text-center ${homeWins ? 'text-sya-orange' : 'text-gray-400'}`}>
+                {match.homeScore}
+              </span>
+            )}
+            {homeWins && <span className="text-[9px] bg-sya-orange text-white px-1.5 py-0.5 rounded-full font-black">✓</span>}
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-2">
+            <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+            <span className="text-[10px] font-black text-gray-400">VS</span>
+            {match.penaltyWinner && (
+              <span className="text-[9px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded-full font-bold border border-purple-500/20">
+                PEN
+              </span>
+            )}
+            <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+          </div>
+
+          {/* Away */}
+          <div className={`flex items-center justify-between gap-2 ${
+            isFinished && !awayWins ? 'opacity-50' : ''
+          }`}>
+            <span className={`font-bold text-sm truncate flex-1 ${
+              awayWins ? 'text-sya-orange' : ''
+            } ${isPlaceholder && match.awayTeam.startsWith('[') ? 'text-gray-400 italic text-xs' : ''}`}>
+              {match.awayTeam.replace(/^\[|\]$/g, '')}
+            </span>
+            {isFinished && (
+              <span className={`text-lg font-black w-7 text-center ${awayWins ? 'text-sya-orange' : 'text-gray-400'}`}>
+                {match.awayScore}
+              </span>
+            )}
+            {awayWins && <span className="text-[9px] bg-sya-orange text-white px-1.5 py-0.5 rounded-full font-black">✓</span>}
+          </div>
+        </div>
       </div>
 
-      {/* Teams */}
-      <div className="px-4 py-3 space-y-2">
-        {/* Home */}
-        <div className={`flex items-center justify-between gap-2 ${
-          isFinished && !homeWins ? 'opacity-50' : ''
-        }`}>
-          <span className={`font-bold text-sm truncate flex-1 ${
-            homeWins ? 'text-sya-orange' : ''
-          } ${isPlaceholder && match.homeTeam.startsWith('[') ? 'text-gray-400 italic text-xs' : ''}`}>
-            {match.homeTeam.replace(/^\[|\]$/g, '')}
-          </span>
-          {isFinished && (
-            <span className={`text-lg font-black w-7 text-center ${homeWins ? 'text-sya-orange' : 'text-gray-400'}`}>
-              {match.homeScore}
-            </span>
-          )}
-          {homeWins && <span className="text-[9px] bg-sya-orange text-white px-1.5 py-0.5 rounded-full font-black">✓</span>}
-        </div>
-
-        {/* Divider */}
-        <div className="flex items-center gap-2">
-          <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
-          <span className="text-[10px] font-black text-gray-400">VS</span>
-          {match.penaltyWinner && (
-            <span className="text-[9px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded-full font-bold border border-purple-500/20">
-              PEN
-            </span>
-          )}
-          <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
-        </div>
-
-        {/* Away */}
-        <div className={`flex items-center justify-between gap-2 ${
-          isFinished && !awayWins ? 'opacity-50' : ''
-        }`}>
-          <span className={`font-bold text-sm truncate flex-1 ${
-            awayWins ? 'text-sya-orange' : ''
-          } ${isPlaceholder && match.awayTeam.startsWith('[') ? 'text-gray-400 italic text-xs' : ''}`}>
-            {match.awayTeam.replace(/^\[|\]$/g, '')}
-          </span>
-          {isFinished && (
-            <span className={`text-lg font-black w-7 text-center ${awayWins ? 'text-sya-orange' : 'text-gray-400'}`}>
-              {match.awayScore}
-            </span>
-          )}
-          {awayWins && <span className="text-[9px] bg-sya-orange text-white px-1.5 py-0.5 rounded-full font-black">✓</span>}
-        </div>
-      </div>
+      {isLocked && !isPlaceholder && onShowPredictions && (
+        <button
+          onClick={() => onShowPredictions(match)}
+          className="w-full py-2 bg-gray-500/5 hover:bg-sya-orange/10 hover:text-sya-orange text-gray-400 font-bold text-[9px] uppercase tracking-wider border-t border-gray-200 dark:border-gray-800 flex items-center justify-center gap-1 transition-all"
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span>Ver Prodes de otros</span>
+        </button>
+      )}
     </div>
   );
 }
@@ -124,6 +141,7 @@ export default function KnockoutPage() {
   const [matches, setMatches] = useState<KnockoutMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeStage, setActiveStage] = useState<string>('ROUND_32');
+  const [selectedMatchForAudit, setSelectedMatchForAudit] = useState<KnockoutMatch | null>(null);
 
   useEffect(() => {
     fetch('/api/matches')
@@ -202,7 +220,11 @@ export default function KnockoutPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredMatches.map((match) => (
-                <MatchCard key={match.id} match={match} />
+                <MatchCard 
+                  key={match.id} 
+                  match={match} 
+                  onShowPredictions={(m) => setSelectedMatchForAudit(m)}
+                />
               ))}
             </div>
           )}
@@ -215,6 +237,19 @@ export default function KnockoutPage() {
             </div>
           )}
         </>
+      )}
+
+      {selectedMatchForAudit && (
+        <OtherPredictionsModal
+          isOpen={!!selectedMatchForAudit}
+          onClose={() => setSelectedMatchForAudit(null)}
+          matchId={selectedMatchForAudit.id}
+          homeTeam={selectedMatchForAudit.homeTeam}
+          awayTeam={selectedMatchForAudit.awayTeam}
+          matchDate={selectedMatchForAudit.matchDate}
+          homeScore={selectedMatchForAudit.homeScore}
+          awayScore={selectedMatchForAudit.awayScore}
+        />
       )}
     </div>
   );
