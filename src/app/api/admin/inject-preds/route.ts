@@ -6,8 +6,8 @@ export async function GET() {
   try {
     const match = await db.match.findFirst({
       where: {
-        homeTeam: { contains: 'Canadá' },
-        awayTeam: { contains: 'Sudáfrica' }
+        homeTeam: { contains: 'Sudáfrica' },
+        awayTeam: { contains: 'Canadá' }
       }
     });
 
@@ -33,25 +33,25 @@ export async function GET() {
       }, { status: 400 });
     }
 
-    // Gonza: 2-1
+    // Gonza: Canada 2 - Sudafrica 1 => home=1, away=2
     await db.prediction.upsert({
       where: { userId_matchId: { userId: gonza.id, matchId: match.id } },
-      create: { userId: gonza.id, matchId: match.id, predictedHomeScore: 2, predictedAwayScore: 1 },
-      update: { predictedHomeScore: 2, predictedAwayScore: 1 }
+      create: { userId: gonza.id, matchId: match.id, predictedHomeScore: 1, predictedAwayScore: 2 },
+      update: { predictedHomeScore: 1, predictedAwayScore: 2 }
     });
 
-    // Dany: 3-1
+    // Dany: Canada 3 - Sudafrica 1 => home=1, away=3
     await db.prediction.upsert({
       where: { userId_matchId: { userId: dany.id, matchId: match.id } },
-      create: { userId: dany.id, matchId: match.id, predictedHomeScore: 3, predictedAwayScore: 1 },
-      update: { predictedHomeScore: 3, predictedAwayScore: 1 }
+      create: { userId: dany.id, matchId: match.id, predictedHomeScore: 1, predictedAwayScore: 3 },
+      update: { predictedHomeScore: 1, predictedAwayScore: 3 }
     });
 
-    // Pablo: 2-1
+    // Pablo: Canada 2 - Sudafrica 1 => home=1, away=2
     await db.prediction.upsert({
       where: { userId_matchId: { userId: pablo.id, matchId: match.id } },
-      create: { userId: pablo.id, matchId: match.id, predictedHomeScore: 2, predictedAwayScore: 1 },
-      update: { predictedHomeScore: 2, predictedAwayScore: 1 }
+      create: { userId: pablo.id, matchId: match.id, predictedHomeScore: 1, predictedAwayScore: 2 },
+      update: { predictedHomeScore: 1, predictedAwayScore: 2 }
     });
 
     // Recalculate match points
