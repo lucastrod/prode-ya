@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Award, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 interface Match {
@@ -42,6 +43,11 @@ export default function UserAuditPredictionsModal({
 }: UserAuditPredictionsModalProps) {
   const [predictions, setPredictions] = useState<PredictionItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -69,7 +75,7 @@ export default function UserAuditPredictionsModal({
     fetchUserPredictions();
   }, [isOpen, userId]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const formatMatchDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -105,7 +111,7 @@ export default function UserAuditPredictionsModal({
     );
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', background: 'rgba(0,0,0,0.5)' }}>
       <div className="relative max-w-xl w-full bg-white dark:bg-[#111827] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col max-h-[85vh] overflow-hidden animate-slide-up">
         
@@ -222,6 +228,7 @@ export default function UserAuditPredictionsModal({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
