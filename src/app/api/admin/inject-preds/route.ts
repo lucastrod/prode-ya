@@ -12,7 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Match not found' }, { status: 404 });
     }
 
-    const usersToFind = ['Gonza', 'Dan', 'Pablo'];
+    const usersToFind = ['Gonza', 'Dan', 'Pablo', 'Lucas'];
     const users = await db.user.findMany({
       where: {
         OR: usersToFind.map(name => ({ name: { contains: name } }))
@@ -22,8 +22,9 @@ export async function GET() {
     const gonza = users.find(u => u.name.includes('Gonza'));
     const dany = users.find(u => u.name.includes('Dan'));
     const pablo = users.find(u => u.name.includes('Pablo'));
+    const lucas = users.find(u => u.name.includes('Lucas'));
 
-    if (!gonza || !dany || !pablo) {
+    if (!gonza || !dany || !pablo || !lucas) {
       return NextResponse.json({ 
         error: 'Users not found', 
         found: users.map(u => u.name) 
@@ -49,6 +50,13 @@ export async function GET() {
       where: { userId_matchId: { userId: pablo.id, matchId: match.id } },
       create: { userId: pablo.id, matchId: match.id, predictedHomeScore: 1, predictedAwayScore: 2 },
       update: { predictedHomeScore: 1, predictedAwayScore: 2 }
+    });
+
+    // Lucas: Canada 2 - Sudafrica 0 => home=0, away=2
+    await db.prediction.upsert({
+      where: { userId_matchId: { userId: lucas.id, matchId: match.id } },
+      create: { userId: lucas.id, matchId: match.id, predictedHomeScore: 0, predictedAwayScore: 2 },
+      update: { predictedHomeScore: 0, predictedAwayScore: 2 }
     });
 
     // Recalculate match points
