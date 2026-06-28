@@ -31,4 +31,18 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = parseInt(searchParams.get('id') || '');
+    if (!id) {
+      return NextResponse.json({ error: 'Match ID is required' }, { status: 400 });
+    }
+    await dbClient.deleteMatch(id);
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
 export const dynamic = 'force-dynamic';

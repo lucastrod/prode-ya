@@ -33,6 +33,71 @@ const STAGE_LABELS: Record<string, string> = {
   FINAL: 'Gran Final',
 };
 
+const FLAG_MAP: Record<string, string> = {
+  "Alemania": "🇩🇪",
+  "Argelia": "🇩🇿",
+  "Argentina": "🇦🇷",
+  "Arabia Saudita": "🇸🇦",
+  "Australia": "🇦🇺",
+  "Austria": "🇦🇹",
+  "Bélgica": "🇧🇪",
+  "Bosnia y Herzegovina": "🇧🇦",
+  "Brasil": "🇧🇷",
+  "Canadá": "🇨🇦",
+  "Cabo Verde": "🇨🇻",
+  "Colombia": "🇨🇴",
+  "Corea del Sur": "🇰🇷",
+  "Costa de Marfil": "🇨🇮",
+  "Croacia": "🇭🇷",
+  "Curazao": "🇨🇼",
+  "Ecuador": "🇪🇨",
+  "Egipto": "🇪🇬",
+  "España": "🇪🇸",
+  "Estados Unidos": "🇺🇸",
+  "Francia": "🇫🇷",
+  "Ghana": "🇬🇭",
+  "Haití": "🇭🇹",
+  "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "Irak": "🇮🇶",
+  "Irán": "🇮🇷",
+  "Japón": "🇯🇵",
+  "Jordania": "🇯🇴",
+  "Marruecos": "🇲🇦",
+  "México": "🇲🇽",
+  "Noruega": "🇳🇴",
+  "Nueva Zelanda": "🇳🇿",
+  "Países Bajos": "🇳🇱",
+  "Panamá": "🇵🇦",
+  "Paraguay": "🇵🇾",
+  "Portugal": "🇵🇹",
+  "Qatar": "🇶🇦",
+  "República Checa": "🇨🇿",
+  "RD Congo": "🇨🇩",
+  "República Democrática del Congo": "🇨🇩",
+  "Escocia": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "Senegal": "🇸🇳",
+  "Sudáfrica": "🇿🇦",
+  "Suecia": "🇸🇪",
+  "Suiza": "🇨🇭",
+  "Túnez": "🇹🇳",
+  "Turquía": "🇹🇷",
+  "Uruguay": "🇺🇾",
+  "Uzbekistán": "🇺🇿",
+};
+
+export function getFlagEmoji(teamName: string): string {
+  if (!teamName) return "";
+  const cleanName = teamName.replace(/^\[|\]$/g, '').trim();
+  if (FLAG_MAP[cleanName]) return FLAG_MAP[cleanName];
+  
+  for (const [key, val] of Object.entries(FLAG_MAP)) {
+    if (cleanName.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(cleanName.toLowerCase())) {
+      return val;
+    }
+  }
+  return "";
+}
+
 const STAGE_ORDER = ['ROUND_32', 'ROUND_16', 'QUARTER', 'SEMI', 'THIRD_PLACE', 'FINAL'];
 
 function MatchCard({
@@ -117,11 +182,14 @@ function MatchCard({
           <div className={`flex items-center justify-between gap-2 ${
             isFinished && !homeWins ? 'opacity-50' : ''
           }`}>
-            <span className={`font-bold text-sm truncate flex-1 ${
-              homeWins ? 'text-sya-orange' : ''
-            } ${isPlaceholder && match.homeTeam.startsWith('[') ? 'text-gray-400 italic text-xs' : ''}`}>
-              {match.homeTeam.replace(/^\[|\]$/g, '')}
-            </span>
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <span className="text-base sm:text-lg shrink-0" title={match.homeTeam.replace(/^\[|\]$/g, '')}>{getFlagEmoji(match.homeTeam)}</span>
+              <span className={`font-bold text-sm truncate ${
+                homeWins ? 'text-sya-orange' : ''
+              } ${isPlaceholder && match.homeTeam.startsWith('[') ? 'text-gray-400 italic text-xs' : ''}`}>
+                {match.homeTeam.replace(/^\[|\]$/g, '')}
+              </span>
+            </div>
             {isFinished && (
               <span className={`text-lg font-black w-7 text-center ${homeWins ? 'text-sya-orange' : 'text-gray-400'}`}>
                 {match.homeScore}
@@ -146,11 +214,14 @@ function MatchCard({
           <div className={`flex items-center justify-between gap-2 ${
             isFinished && !awayWins ? 'opacity-50' : ''
           }`}>
-            <span className={`font-bold text-sm truncate flex-1 ${
-              awayWins ? 'text-sya-orange' : ''
-            } ${isPlaceholder && match.awayTeam.startsWith('[') ? 'text-gray-400 italic text-xs' : ''}`}>
-              {match.awayTeam.replace(/^\[|\]$/g, '')}
-            </span>
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <span className="text-base sm:text-lg shrink-0" title={match.awayTeam.replace(/^\[|\]$/g, '')}>{getFlagEmoji(match.awayTeam)}</span>
+              <span className={`font-bold text-sm truncate ${
+                awayWins ? 'text-sya-orange' : ''
+              } ${isPlaceholder && match.awayTeam.startsWith('[') ? 'text-gray-400 italic text-xs' : ''}`}>
+                {match.awayTeam.replace(/^\[|\]$/g, '')}
+              </span>
+            </div>
             {isFinished && (
               <span className={`text-lg font-black w-7 text-center ${awayWins ? 'text-sya-orange' : 'text-gray-400'}`}>
                 {match.awayScore}

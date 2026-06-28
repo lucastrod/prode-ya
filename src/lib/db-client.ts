@@ -642,6 +642,25 @@ export const dbClient = {
     throw new Error('Match not found in mock store');
   },
 
+  async deleteMatch(id: number) {
+    if (isDbConfigured()) {
+      try {
+        // First remove related predictions
+        await db.prediction.deleteMany({ where: { matchId: id } });
+        return await db.match.delete({ where: { id } });
+      } catch (err) {
+        console.error('Prisma delete match failed:', err);
+        throw err;
+      }
+    }
+    // Mock
+    const data = mockDb.readMockDB();
+    data.matches = data.matches.filter((m) => m.id !== id);
+    data.predictions = data.predictions.filter((p) => p.matchId !== id);
+    mockDb.writeMockDB(data);
+    return { success: true };
+  },
+
   // --- ADMIN METRICS ---
   async getAdminMetrics() {
     if (isDbConfigured()) {
