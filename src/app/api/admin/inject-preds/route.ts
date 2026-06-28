@@ -5,10 +5,7 @@ import { recalculateMatchPoints } from '@/lib/points-engine';
 export async function GET() {
   try {
     const match = await db.match.findFirst({
-      where: {
-        homeTeam: { contains: 'Sudáfrica' },
-        awayTeam: { contains: 'Canadá' }
-      }
+      where: { id: 106 }
     });
 
     if (!match) {
