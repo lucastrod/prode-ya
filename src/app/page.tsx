@@ -13,7 +13,10 @@ import {
   Save, 
   CheckCircle, 
   AlertCircle,
-  Edit2
+  Edit2,
+  Swords,
+  Lock,
+  Star,
 } from 'lucide-react';
 
 interface Match {
@@ -22,6 +25,7 @@ interface Match {
   awayTeam: string;
   matchDate: string;
   groupName: string;
+  stage: string | null;
   status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'CANCELLED';
   homeScore: number | null;
   awayScore: number | null;
@@ -38,6 +42,7 @@ export default function HomePage() {
   const { user, profile } = useAuth();
   
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
+  const [hasKnockoutMatches, setHasKnockoutMatches] = useState(false);
   const [predictions, setPredictions] = useState<Record<number, Prediction>>({});
   const [loading, setLoading] = useState(true);
   const [saveStates, setSaveStates] = useState<Record<number, 'idle' | 'saving' | 'saved' | 'error'>>({});
@@ -48,7 +53,6 @@ export default function HomePage() {
 
     const loadDashboardData = async () => {
       try {
-        // Fetch matches
         const matchesRes = await fetch('/api/matches');
         const predictionsRes = await fetch(`/api/predictions?userId=${user.id}`);
         
@@ -56,13 +60,31 @@ export default function HomePage() {
           const matchesData = await matchesRes.json();
           const predictionsData = await predictionsRes.json();
 
-          // Get next 10 upcoming matches (status SCHEDULED, sorted by date asc)
           const now = new Date();
-          const upcoming = (matchesData.matches || [])
-            .filter((m: Match) => m.status === 'SCHEDULED' && new Date(m.matchDate).getTime() - 15 * 60000 > now.getTime())
-            .slice(0, 10);
+          const allMatches: Match[] = matchesData.matches || [];
 
-          setUpcomingMatches(upcoming);
+          // Show only ROUND_32 upcoming matches
+          const knockoutUpcoming = allMatches
+            .filter((m) =>
+              m.stage === 'ROUND_32' &&
+              m.status === 'SCHEDULED' &&
+              new Date(m.matchDate).getTime() - 15 * 60000 > now.getTime()
+            )
+            .slice(0, 32);
+
+          const anyKnockout = allMatches.some((m) => m.stage === 'ROUND_32');
+          setHasKnockoutMatches(anyKnockout);
+
+          // Fallback to group stage if no knockout matches exist yet
+          const groupUpcoming = allMatches
+            .filter((m) =>
+              (!m.stage || m.stage === 'GROUP') &&
+              m.status === 'SCHEDULED' &&
+              new Date(m.matchDate).getTime() - 15 * 60000 > now.getTime()
+            )
+            .slice(0, 6);
+
+          setUpcomingMatches(knockoutUpcoming.length > 0 ? knockoutUpcoming : groupUpcoming);
 
           // Populate existing predictions in state
           const predsMap: Record<number, Prediction> = {};
@@ -89,18 +111,15 @@ export default function HomePage() {
   }, [user]);
 
   const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Allow control/navigation keys: backspace, delete, tab, escape, enter, arrows
     if ([
       'Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 
       'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'
     ].includes(e.key)) {
       return;
     }
-    // Allow clipboard/select shortcuts
     if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) {
       return;
     }
-    // Prevent keypress if not a digit
     if (!/^\d$/.test(e.key)) {
       e.preventDefault();
     }
@@ -118,7 +137,6 @@ export default function HomePage() {
       },
     }));
 
-    // Reset save state on change
     setSaveStates((prev) => ({ ...prev, [matchId]: 'idle' }));
   };
 
@@ -140,7 +158,6 @@ export default function HomePage() {
           predictedAwayScore: pred.predictedAwayScore === '' ? 0 : Number(pred.predictedAwayScore),
         }),
       });
-
 
       if (res.ok) {
         setSaveStates((prev) => ({ ...prev, [matchId]: 'saved' }));
@@ -171,12 +188,23 @@ export default function HomePage() {
     }) + ' hs';
   };
 
+  const getStageLabel = (match: Match) => {
+    if (match.stage === 'ROUND_32') return 'Round of 32';
+    if (match.stage === 'ROUND_16') return 'Octavos de Final';
+    if (match.stage === 'QUARTER') return 'Cuartos de Final';
+    if (match.stage === 'SEMI') return 'Semifinales';
+    if (match.stage === 'FINAL') return 'Gran Final';
+    return match.groupName || '';
+  };
+
+  const upcomingAreKnockout = upcomingMatches.length > 0 && upcomingMatches.some((m) => m.stage && m.stage !== 'GROUP');
+
   const quickActions = [
     { 
-      name: 'Próximos Partidos', 
-      desc: 'Cargá y editá tus pronósticos', 
-      href: '/groups', 
-      icon: Calendar,
+      name: 'Fase Eliminatoria', 
+      desc: 'Cargá tus pronósticos de 16vos', 
+      href: '/knockout', 
+      icon: Swords,
       color: 'bg-sya-orange',
     },
     { 
@@ -217,7 +245,7 @@ export default function HomePage() {
           </p>
         </div>
         <div className="flex gap-4 shrink-0 z-10">
-          <Link href="/groups" className="px-6 py-3 sya-button-primary text-sm shadow-md">
+          <Link href="/knockout" className="px-6 py-3 sya-button-primary text-sm shadow-md">
             Cargar Pronósticos
           </Link>
         </div>
@@ -261,120 +289,174 @@ export default function HomePage() {
         
         {/* Left 2 Cols: Upcoming matches prediction helper */}
         <section className="lg:col-span-2 space-y-4">
-          <h2 className="text-xl font-extrabold font-serif tracking-wide border-l-4 border-sya-orange pl-3">
-            Próximos Partidos a Jugar
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-extrabold font-serif tracking-wide border-l-4 border-sya-orange pl-3">
+              Próximos Partidos a Jugar
+            </h2>
+            {upcomingAreKnockout && (
+              <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-sya-orange/10 text-sya-orange px-3 py-1.5 rounded-full border border-sya-orange/20">
+                <Swords className="w-3 h-3" />
+                Fase Eliminatoria
+              </span>
+            )}
+          </div>
 
           {loading ? (
             <div className="sya-glass p-12 text-center text-gray-400 font-semibold animate-pulse">
               Cargando fixture...
             </div>
+          ) : !hasKnockoutMatches ? (
+            /* No knockout matches yet → "Próximamente" card */
+            <div className="sya-glass p-10 text-center space-y-5 border border-dashed border-sya-orange/20">
+              <div className="flex justify-center">
+                <div className="w-16 h-16 rounded-full bg-sya-orange/10 border-2 border-sya-orange/20 flex items-center justify-center">
+                  <Lock className="w-7 h-7 text-sya-orange/60" />
+                </div>
+              </div>
+              <div className="flex justify-center gap-2">
+                <Star className="w-3.5 h-3.5 text-sya-orange/30" />
+                <Star className="w-4 h-4 text-sya-orange/60" />
+                <Star className="w-3.5 h-3.5 text-sya-orange/30" />
+              </div>
+              <div>
+                <p className="font-extrabold text-lg">Próximamente</p>
+                <p className="text-sm text-sya-orange font-bold mt-1">Fase Eliminatoria</p>
+              </div>
+              <p className="text-sm text-gray-400 font-medium leading-relaxed max-w-sm mx-auto">
+                Los partidos de la Fase Eliminatoria se anunciarán una vez que todos los grupos queden definidos. ¡Prepará tus pronósticos!
+              </p>
+              <Link
+                href="/groups"
+                className="inline-flex items-center gap-2 text-xs font-bold text-sya-blue hover:text-sya-orange transition-colors"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                Ver resultados de Fase de Grupos
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           ) : upcomingMatches.length === 0 ? (
             <div className="sya-glass p-8 text-center text-gray-400 font-semibold border-dashed border-2">
-              No hay partidos próximos programados. ¡Revisá la sección de Fase de Grupos!
+              No hay partidos eliminatorios próximos programados.
             </div>
           ) : (
             <div className="space-y-4">
               <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 {upcomingMatches.map((match) => {
-                const pred = predictions[match.id] || { predictedHomeScore: 0, predictedAwayScore: 0 };
-                const saveState = saveStates[match.id] || 'idle';
-                
-                return (
-                  <div key={match.id} className="sya-glass p-5 hover:border-sya-orange/30 transition-all">
-                    
-                    {/* Header: Date and Group */}
-                    <div className="flex justify-between items-center text-xs text-gray-400 font-bold mb-4">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-sya-orange" />
-                        <span>{formatMatchDate(match.matchDate)}</span>
-                      </div>
-                      <span className="bg-sya-blue/10 text-sya-blue px-2.5 py-1 rounded-full uppercase">
-                        {match.groupName}
-                      </span>
-                    </div>
-
-                    {/* Score Input Fields Grid */}
-                    <div className="flex items-center justify-between gap-4">
+                  const pred = predictions[match.id] || { predictedHomeScore: '', predictedAwayScore: '' };
+                  const saveState = saveStates[match.id] || 'idle';
+                  const isKnockout = match.stage && match.stage !== 'GROUP';
+                  
+                  return (
+                    <div key={match.id} className="sya-glass p-5 hover:border-sya-orange/30 transition-all">
                       
-                      {/* Home Team */}
-                      <div className="flex-1 text-right font-bold text-sm sm:text-base pr-2 truncate">
-                        {match.homeTeam}
+                      {/* Header: Date and Stage/Group */}
+                      <div className="flex justify-between items-center text-xs text-gray-400 font-bold mb-4">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-sya-orange" />
+                          <span>{formatMatchDate(match.matchDate)}</span>
+                        </div>
+                        <span className="bg-sya-orange/10 text-sya-orange border border-sya-orange/20 px-2.5 py-1 rounded-full uppercase text-[10px] font-bold">
+                          {getStageLabel(match)}
+                        </span>
                       </div>
 
-                      {/* Inputs Row */}
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          value={pred.predictedHomeScore}
-                          onChange={(e) => handleScoreChange(match.id, 'home', e.target.value)}
-                          onKeyDown={handleNumericKeyDown}
-                          className="w-14 h-14 text-center bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent font-black text-2xl no-spinner"
-                        />
-                        <span className="text-gray-400 font-extrabold text-xs">vs</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          value={pred.predictedAwayScore}
-                          onChange={(e) => handleScoreChange(match.id, 'away', e.target.value)}
-                          onKeyDown={handleNumericKeyDown}
-                          className="w-14 h-14 text-center bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent font-black text-2xl no-spinner"
-                        />
+                      {/* Score Input Fields Grid */}
+                      <div className="flex items-center justify-between gap-4">
+                        
+                        {/* Home Team */}
+                        <div className="flex-1 text-right font-bold text-sm sm:text-base pr-2 truncate min-w-0">
+                          {match.homeTeam}
+                        </div>
+
+                        {/* Inputs Row — only for knockout matches */}
+                        {isKnockout ? (
+                          <div className="flex items-center gap-2 shrink-0">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              placeholder="-"
+                              value={pred.predictedHomeScore}
+                              onChange={(e) => handleScoreChange(match.id, 'home', e.target.value)}
+                              onKeyDown={handleNumericKeyDown}
+                              className="w-14 h-14 text-center bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent font-black text-2xl no-spinner"
+                            />
+                            <span className="text-gray-400 font-extrabold text-xs">vs</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              placeholder="-"
+                              value={pred.predictedAwayScore}
+                              onChange={(e) => handleScoreChange(match.id, 'away', e.target.value)}
+                              onKeyDown={handleNumericKeyDown}
+                              className="w-14 h-14 text-center bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-sya-orange focus:border-transparent font-black text-2xl no-spinner"
+                            />
+                          </div>
+                        ) : (
+                          /* Group stage: read-only display */
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div className="w-14 h-14 text-center bg-gray-100 dark:bg-gray-800/50 rounded-xl font-black text-2xl flex items-center justify-center text-gray-300 dark:text-gray-600">
+                              -
+                            </div>
+                            <span className="text-gray-400 font-extrabold text-xs">vs</span>
+                            <div className="w-14 h-14 text-center bg-gray-100 dark:bg-gray-800/50 rounded-xl font-black text-2xl flex items-center justify-center text-gray-300 dark:text-gray-600">
+                              -
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Away Team */}
+                        <div className="flex-1 text-left font-bold text-sm sm:text-base pl-2 truncate min-w-0">
+                          {match.awayTeam}
+                        </div>
+
+                        {/* Action Button — only for knockout */}
+                        {isKnockout && (
+                          <div className="w-28 flex justify-end shrink-0">
+                            <button
+                              onClick={() => handleSavePrediction(match.id)}
+                              disabled={saveState === 'saving'}
+                              className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                                saveState === 'saved'
+                                  ? 'bg-green-500 text-white'
+                                  : saveState === 'error'
+                                  ? 'bg-red-500 text-white'
+                                  : savedMatchIds.has(match.id)
+                                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                                  : 'bg-sya-orange hover:bg-sya-orange-hover text-white'
+                              }`}
+                            >
+                              {saveState === 'saving' ? (
+                                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              ) : saveState === 'saved' ? (
+                                <>
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  <span>Guardado</span>
+                                </>
+                              ) : saveState === 'error' ? (
+                                <>
+                                  <AlertCircle className="w-3.5 h-3.5" />
+                                  <span>Error</span>
+                                </>
+                              ) : (
+                                <>
+                                  {savedMatchIds.has(match.id) ? <Edit2 className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                                  <span>{savedMatchIds.has(match.id) ? 'Editar' : 'Predecir'}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
+
                       </div>
-
-
-                      {/* Away Team */}
-                      <div className="flex-1 text-left font-bold text-sm sm:text-base pl-2 truncate">
-                        {match.awayTeam}
-                      </div>
-
-                      {/* Action Button */}
-                      <div className="w-28 flex justify-end shrink-0">
-                        <button
-                          onClick={() => handleSavePrediction(match.id)}
-                          disabled={saveState === 'saving'}
-                          className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
-                            saveState === 'saved'
-                              ? 'bg-green-500 text-white'
-                              : saveState === 'error'
-                              ? 'bg-red-500 text-white'
-                              : savedMatchIds.has(match.id)
-                              ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                              : 'bg-sya-orange hover:bg-sya-orange-hover text-white'
-                          }`}
-                        >
-                          {saveState === 'saving' ? (
-                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          ) : saveState === 'saved' ? (
-                            <>
-                              <CheckCircle className="w-3.5 h-3.5" />
-                              <span>Guardado</span>
-                            </>
-                          ) : saveState === 'error' ? (
-                            <>
-                              <AlertCircle className="w-3.5 h-3.5" />
-                              <span>Error</span>
-                            </>
-                          ) : (
-                            <>
-                              {savedMatchIds.has(match.id) ? <Edit2 className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
-                              <span>{savedMatchIds.has(match.id) ? 'Editar' : 'Predecir'}</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
               <div className="text-right mt-4">
-                <Link href="/groups" className="text-xs font-bold text-sya-blue hover:text-sya-orange hover:underline transition-colors inline-flex items-center gap-1">
-                  <span>Ver todas las predicciones</span>
+                <Link href="/knockout" className="text-xs font-bold text-sya-blue hover:text-sya-orange hover:underline transition-colors inline-flex items-center gap-1">
+                  <span>Ver bracket eliminatorio</span>
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>

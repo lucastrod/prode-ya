@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Swords, Trophy, Clock, CheckCircle, Eye } from 'lucide-react';
+import { Swords, Trophy, Clock, CheckCircle, Eye, Save, Edit2, AlertCircle } from 'lucide-react';
 import OtherPredictionsModal from '@/components/OtherPredictionsModal';
+import { useAuth } from '@/context/AuthContext';
 
 interface KnockoutMatch {
   id: number;
@@ -17,6 +18,12 @@ interface KnockoutMatch {
   penaltyWinner: string | null;
 }
 
+interface Prediction {
+  matchId: number;
+  predictedHomeScore: number | '';
+  predictedAwayScore: number | '';
+}
+
 const STAGE_LABELS: Record<string, string> = {
   ROUND_32: 'Round of 32',
   ROUND_16: 'Octavos de Final',
@@ -28,7 +35,23 @@ const STAGE_LABELS: Record<string, string> = {
 
 const STAGE_ORDER = ['ROUND_32', 'ROUND_16', 'QUARTER', 'SEMI', 'THIRD_PLACE', 'FINAL'];
 
-function MatchCard({ match, onShowPredictions }: { match: KnockoutMatch; onShowPredictions?: (m: KnockoutMatch) => void }) {
+function MatchCard({
+  match,
+  prediction,
+  saveState,
+  savedMatchIds,
+  onShowPredictions,
+  onScoreChange,
+  onSave,
+}: {
+  match: KnockoutMatch;
+  prediction?: Prediction;
+  saveState?: 'idle' | 'saving' | 'saved' | 'error';
+  savedMatchIds?: Set<number>;
+  onShowPredictions?: (m: KnockoutMatch) => void;
+  onScoreChange?: (matchId: number, team: 'home' | 'away', val: string) => void;
+  onSave?: (matchId: number) => void;
+}) {
   const isFinished = match.status === 'FINISHED';
   const isLive = match.status === 'LIVE';
   const isPlaceholder = match.homeTeam.startsWith('[') || match.awayTeam.startsWith('[');
@@ -36,6 +59,7 @@ function MatchCard({ match, onShowPredictions }: { match: KnockoutMatch; onShowP
   const matchDate = new Date(match.matchDate);
   const now = new Date();
   const isLocked = now >= new Date(matchDate.getTime() - 15 * 60000) || match.status === 'LIVE' || match.status === 'FINISHED';
+  const canPredict = match.stage === 'ROUND_32' && !isLocked && !isPlaceholder;
 
   const getWinner = (side: 'home' | 'away') => {
     if (!isFinished || match.homeScore === null || match.awayScore === null) return false;
@@ -55,6 +79,19 @@ function MatchCard({ match, onShowPredictions }: { match: KnockoutMatch; onShowP
       minute: '2-digit',
     });
   };
+
+  const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ([
+      'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+      'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'
+    ].includes(e.key)) return;
+    if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) return;
+    if (!/^\d$/.test(e.key)) e.preventDefault();
+  };
+
+  const pred = prediction || { predictedHomeScore: '', predictedAwayScore: '' };
+  const state = saveState || 'idle';
+  const alreadySaved = savedMatchIds?.has(match.id) || false;
 
   return (
     <div className={`sya-glass overflow-hidden transition-all duration-300 hover:translate-y-[-2px] flex flex-col justify-between ${
@@ -122,6 +159,66 @@ function MatchCard({ match, onShowPredictions }: { match: KnockoutMatch; onShowP
             {awayWins && <span className="text-[9px] bg-sya-orange text-white px-1.5 py-0.5 rounded-full font-black">✓</span>}
           </div>
         </div>
+
+        {/* Prediction input zone — ROUND_32 only, not yet locked */}
+        {canPredict && onScoreChange && onSave && (
+          <div className="px-4 pb-3 border-t border-gray-200 dark:border-gray-800 pt-3">
+            <p className="text-[10px] text-gray-400 font-bold uppercase mb-2">Tu pronóstico</p>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="-"
+                value={pred.predictedHomeScore}
+                onChange={(e) => onScoreChange(match.id, 'home', e.target.value)}
+                onKeyDown={handleNumericKeyDown}
+                className="w-12 h-10 text-center bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-sya-orange font-black text-xl no-spinner"
+              />
+              <span className="text-gray-400 font-extrabold text-xs">-</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="-"
+                value={pred.predictedAwayScore}
+                onChange={(e) => onScoreChange(match.id, 'away', e.target.value)}
+                onKeyDown={handleNumericKeyDown}
+                className="w-12 h-10 text-center bg-gray-500/5 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-sya-orange font-black text-xl no-spinner"
+              />
+              <button
+                onClick={() => onSave(match.id)}
+                disabled={state === 'saving'}
+                className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                  state === 'saved'
+                    ? 'bg-green-500 text-white'
+                    : state === 'error'
+                    ? 'bg-red-500 text-white'
+                    : alreadySaved
+                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                    : 'bg-sya-orange hover:bg-sya-orange-hover text-white'
+                }`}
+              >
+                {state === 'saving' ? (
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : state === 'saved' ? (
+                  <><CheckCircle className="w-3 h-3" /><span>Guardado</span></>
+                ) : state === 'error' ? (
+                  <><AlertCircle className="w-3 h-3" /><span>Error</span></>
+                ) : (
+                  <>{alreadySaved ? <Edit2 className="w-3 h-3" /> : <Save className="w-3 h-3" />}<span>{alreadySaved ? 'Editar' : 'Predecir'}</span></>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Locked prediction display */}
+        {!canPredict && !isFinished && !isLive && !isPlaceholder && match.stage === 'ROUND_32' && (
+          <div className="px-4 pb-3 border-t border-gray-200 dark:border-gray-800 pt-3">
+            <p className="text-[10px] text-amber-400 font-bold uppercase">🔒 Pronóstico bloqueado</p>
+          </div>
+        )}
       </div>
 
       {isLocked && !isPlaceholder && onShowPredictions && (
@@ -138,23 +235,99 @@ function MatchCard({ match, onShowPredictions }: { match: KnockoutMatch; onShowP
 }
 
 export default function KnockoutPage() {
+  const { user } = useAuth();
   const [matches, setMatches] = useState<KnockoutMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeStage, setActiveStage] = useState<string>('ROUND_32');
   const [selectedMatchForAudit, setSelectedMatchForAudit] = useState<KnockoutMatch | null>(null);
 
+  const [predictions, setPredictions] = useState<Record<number, Prediction>>({});
+  const [saveStates, setSaveStates] = useState<Record<number, 'idle' | 'saving' | 'saved' | 'error'>>({});
+  const [savedMatchIds, setSavedMatchIds] = useState<Set<number>>(new Set());
+
   useEffect(() => {
-    fetch('/api/matches')
-      .then((r) => r.json())
-      .then((d) => {
+    const fetchAll = async () => {
+      try {
+        const matchesRes = await fetch('/api/matches');
+        const d = await matchesRes.json();
         const all: KnockoutMatch[] = (d.matches || []).filter(
           (m: KnockoutMatch) => m.stage !== 'GROUP'
         );
         setMatches(all);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+
+        if (user) {
+          const predsRes = await fetch(`/api/predictions?userId=${user.id}`);
+          if (predsRes.ok) {
+            const predsData = await predsRes.json();
+            const predsMap: Record<number, Prediction> = {};
+            const savedIds = new Set<number>();
+            (predsData.predictions || []).forEach((p: any) => {
+              predsMap[p.matchId] = {
+                matchId: p.matchId,
+                predictedHomeScore: p.predictedHomeScore,
+                predictedAwayScore: p.predictedAwayScore,
+              };
+              savedIds.add(p.matchId);
+            });
+            setPredictions(predsMap);
+            setSavedMatchIds(savedIds);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAll();
+  }, [user]);
+
+  const handleScoreChange = (matchId: number, team: 'home' | 'away', val: string) => {
+    const cleanVal = val.replace(/\D/g, '');
+    const scoreVal = cleanVal === '' ? '' : parseInt(cleanVal, 10);
+    setPredictions((prev) => ({
+      ...prev,
+      [matchId]: {
+        ...prev[matchId] || { matchId, predictedHomeScore: '', predictedAwayScore: '' },
+        [team === 'home' ? 'predictedHomeScore' : 'predictedAwayScore']: scoreVal,
+      },
+    }));
+    setSaveStates((prev) => ({ ...prev, [matchId]: 'idle' }));
+  };
+
+  const handleSavePrediction = async (matchId: number) => {
+    if (!user) return;
+    const pred = predictions[matchId] || { predictedHomeScore: 0, predictedAwayScore: 0 };
+    setSaveStates((prev) => ({ ...prev, [matchId]: 'saving' }));
+    try {
+      const res = await fetch('/api/predictions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          matchId,
+          predictedHomeScore: pred.predictedHomeScore === '' ? 0 : Number(pred.predictedHomeScore),
+          predictedAwayScore: pred.predictedAwayScore === '' ? 0 : Number(pred.predictedAwayScore),
+        }),
+      });
+      if (res.ok) {
+        setSaveStates((prev) => ({ ...prev, [matchId]: 'saved' }));
+        setSavedMatchIds((prev) => {
+          const next = new Set(prev);
+          next.add(matchId);
+          return next;
+        });
+        setTimeout(() => {
+          setSaveStates((prev) => ({ ...prev, [matchId]: 'idle' }));
+        }, 3000);
+      } else {
+        setSaveStates((prev) => ({ ...prev, [matchId]: 'error' }));
+      }
+    } catch {
+      setSaveStates((prev) => ({ ...prev, [matchId]: 'error' }));
+    }
+  };
 
   const hasAnyKnockoutMatches = matches.length > 0;
   const filteredMatches = matches.filter((m) => m.stage === activeStage);
@@ -168,7 +341,7 @@ export default function KnockoutPage() {
           Fase Eliminatoria
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-          Resultados y fixture de la fase eliminatoria del Mundial 2026. El ganador avanza, el perdedor queda afuera.
+          Cargá tus pronósticos para los 16vos y seguí el fixture de la fase eliminatoria del Mundial 2026.
         </p>
       </div>
 
@@ -210,6 +383,13 @@ export default function KnockoutPage() {
             <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
           </div>
 
+          {/* Hint for ROUND_32 */}
+          {activeStage === 'ROUND_32' && user && (
+            <p className="text-xs text-gray-400 font-semibold text-center">
+              Ingresá tu marcador predicho en cada partido y presioná <strong>Predecir</strong> para guardar.
+            </p>
+          )}
+
           {/* Match Grid or Placeholder */}
           {filteredMatches.length === 0 ? (
             <div className="sya-glass p-12 text-center space-y-4">
@@ -220,10 +400,15 @@ export default function KnockoutPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredMatches.map((match) => (
-                <MatchCard 
-                  key={match.id} 
-                  match={match} 
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  prediction={predictions[match.id]}
+                  saveState={saveStates[match.id]}
+                  savedMatchIds={savedMatchIds}
                   onShowPredictions={(m) => setSelectedMatchForAudit(m)}
+                  onScoreChange={handleScoreChange}
+                  onSave={handleSavePrediction}
                 />
               ))}
             </div>
@@ -254,4 +439,3 @@ export default function KnockoutPage() {
     </div>
   );
 }
-

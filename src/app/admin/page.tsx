@@ -45,6 +45,7 @@ interface MatchData {
   awayTeam: string;
   matchDate: string;
   groupName: string;
+  stage?: string | null;
   status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'CANCELLED';
   homeScore: number | null;
   awayScore: number | null;
@@ -420,7 +421,15 @@ export default function AdminPage() {
 
     // 2. Stage / Group Filter
     if (filterStage === 'ALL') return true;
-    if (filterStage === 'GROUP_ALL') return m.groupName.startsWith('Grupo') || m.groupName.startsWith('Group');
+    if (filterStage === 'GROUP_ALL') return !m.stage || m.stage === 'GROUP';
+    // Knockout stages: compare by stage enum value
+    if (filterStage === 'Round of 32') return m.stage === 'ROUND_32';
+    if (filterStage === 'Round of 16') return m.stage === 'ROUND_16';
+    if (filterStage === 'Cuartos de Final') return m.stage === 'QUARTER';
+    if (filterStage === 'Semifinales') return m.stage === 'SEMI';
+    if (filterStage === '3er Puesto') return m.stage === 'THIRD_PLACE';
+    if (filterStage === 'Gran Final') return m.stage === 'FINAL';
+    // Group stage: compare by groupName
     return m.groupName === filterStage || m.groupName === filterStage.replace('Grupo', 'Group') || m.groupName === filterStage.replace('Group', 'Grupo');
   });
 
