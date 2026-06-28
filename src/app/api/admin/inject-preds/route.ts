@@ -12,7 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Match not found' }, { status: 404 });
     }
 
-    const usersToFind = ['Gonza', 'Dany', 'Pablo'];
+    const usersToFind = ['Gonza', 'Dan', 'Pablo'];
     const users = await db.user.findMany({
       where: {
         OR: usersToFind.map(name => ({ name: { contains: name } }))
@@ -20,7 +20,7 @@ export async function GET() {
     });
 
     const gonza = users.find(u => u.name.includes('Gonza'));
-    const dany = users.find(u => u.name.includes('Dany'));
+    const dany = users.find(u => u.name.includes('Dan'));
     const pablo = users.find(u => u.name.includes('Pablo'));
 
     if (!gonza || !dany || !pablo) {
