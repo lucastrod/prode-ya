@@ -92,9 +92,6 @@ export default function OtherPredictionsModal({
     fetchPredictions();
   }, [isOpen, matchId]);
 
-    fetchPredictions();
-  }, [isOpen, matchId]);
-
   if (!isOpen || !mounted) return null;
 
   return createPortal(
