@@ -2,137 +2,107 @@ import { NextResponse } from 'next/server';
 import { Stage, MatchStatus } from '@prisma/client';
 import db from '@/lib/db';
 
-/**
- * POST /api/admin/knockout/resolve
- *
- * Scans all non-GROUP matches that still have placeholder team names
- * (e.g. "W89", "L101") and resolves them against finished matches.
- *
- * "W{num}"  → winner of the match whose externalMatchId = num (or r32_{num})
- * "L{num}"  → loser  of the match whose externalMatchId = num (or r32_{num})
- *
- * Safe to call multiple times — only updates placeholders where the
- * referenced match is already FINISHED.
- */
-
-const PLACEHOLDER_RE = /^\[?([WL])(\d+)\]?$/;
-
-async function resolveTeam(
-  placeholder: string,
-  finishedByNum: Map<string, { homeTeam: string; awayTeam: string; homeScore: number; awayScore: number; penaltyWinner: string | null }>
-): Promise<string | null> {
-  const match = placeholder.match(PLACEHOLDER_RE);
-  if (!match) return null;
-
-  const [, type, num] = match;
-  const finished = finishedByNum.get(num);
-  if (!finished) return null;
-
-  const { homeTeam, awayTeam, homeScore, awayScore, penaltyWinner } = finished;
-
-  let homeWins: boolean;
-  if (penaltyWinner) {
-    homeWins = penaltyWinner === 'home';
-  } else {
-    homeWins = homeScore > awayScore;
-  }
-
-  if (type === 'W') return homeWins ? homeTeam : awayTeam;
-  if (type === 'L') return homeWins ? awayTeam : homeTeam; // loser for 3rd place
-  return null;
-}
-
 export async function POST() {
   try {
-    // 1. Fetch all FINISHED knockout matches
-    const finishedMatches = await db.match.findMany({
+    const unresolvedMatches = await db.match.findMany({
       where: {
-        status: MatchStatus.FINISHED,
         stage: { not: Stage.GROUP },
-        homeScore: { not: null },
-        awayScore: { not: null },
-      },
-    });
-
-    // Also include FINISHED Group-stage matches that are actually R32
-    // (in case they were seeded with wrong stage) — handled by externalMatchId
-    const allFinished = await db.match.findMany({
-      where: {
-        status: MatchStatus.FINISHED,
-        homeScore: { not: null },
-        awayScore: { not: null },
-        externalMatchId: { not: null },
-      },
-    });
-
-    // Build a map: matchNum → match data
-    const finishedByNum = new Map<string, {
-      homeTeam: string; awayTeam: string;
-      homeScore: number; awayScore: number;
-      penaltyWinner: string | null;
-    }>();
-
-    for (const m of allFinished) {
-      if (!m.externalMatchId || m.homeScore === null || m.awayScore === null) continue;
-      // externalMatchId can be "73" or "r32_73" → extract the numeric part
-      const numMatch = m.externalMatchId.match(/(\d+)$/);
-      if (numMatch) {
-        finishedByNum.set(numMatch[1], {
-          homeTeam: m.homeTeam,
-          awayTeam: m.awayTeam,
-          homeScore: m.homeScore,
-          awayScore: m.awayScore,
-          penaltyWinner: m.penaltyWinner,
-        });
+        OR: [
+          { homeTeam: { startsWith: 'W' } },
+          { homeTeam: { startsWith: 'L' } },
+          { awayTeam: { startsWith: 'W' } },
+          { awayTeam: { startsWith: 'L' } },
+        ]
       }
+    });
+
+    if (unresolvedMatches.length === 0) {
+      return NextResponse.json({
+        success: true,
+        resolved: [],
+        skipped: [],
+        message: 'No hay cruces pendientes de resolución.'
+      });
     }
 
-    // 2. Find all non-GROUP matches with placeholder names
-    const allKnockout = await db.match.findMany({
-      where: { stage: { not: Stage.GROUP } },
-    });
-
-    const updated: string[] = [];
+    const resolved: string[] = [];
     const skipped: string[] = [];
 
-    for (const km of allKnockout) {
-      const newHome = PLACEHOLDER_RE.test(km.homeTeam)
-        ? await resolveTeam(km.homeTeam, finishedByNum)
-        : null;
-      const newAway = PLACEHOLDER_RE.test(km.awayTeam)
-        ? await resolveTeam(km.awayTeam, finishedByNum)
-        : null;
-
-      if (!newHome && !newAway) {
-        // Nothing to resolve for this match
-        continue;
-      }
-
-      if ((PLACEHOLDER_RE.test(km.homeTeam) && !newHome) ||
-          (PLACEHOLDER_RE.test(km.awayTeam) && !newAway)) {
-        // Referenced match not finished yet
-        skipped.push(`${km.homeTeam} vs ${km.awayTeam} (partido referenciado aún no terminó)`);
-        continue;
-      }
-
-      await db.match.update({
-        where: { id: km.id },
-        data: {
-          ...(newHome ? { homeTeam: newHome } : {}),
-          ...(newAway ? { awayTeam: newAway } : {}),
-        },
+    // Helper to get winner/loser team name from a match ID
+    const getTeamFromRef = async (ref: string): Promise<string | null> => {
+      const type = ref.substring(0, 1); // 'W' or 'L'
+      const matchNum = ref.substring(1);
+      
+      // Find the match in DB.
+      const referencedMatch = await db.match.findFirst({
+        where: {
+          OR: [
+            { externalMatchId: matchNum },
+            { externalMatchId: `r32_${matchNum}` },
+            { externalMatchId: `openfootball_2026_${matchNum}` },
+            { externalMatchId: `openfootball_2026_knockout_${parseInt(matchNum) - 72}` }
+          ]
+        }
       });
 
-      const resolvedHome = newHome ?? km.homeTeam;
-      const resolvedAway = newAway ?? km.awayTeam;
-      updated.push(`${resolvedHome} vs ${resolvedAway}`);
+      if (!referencedMatch || referencedMatch.status !== MatchStatus.FINISHED) {
+        return null;
+      }
+
+      const hs = referencedMatch.homeScore ?? 0;
+      const as_ = referencedMatch.awayScore ?? 0;
+      
+      let winner: 'home' | 'away';
+      if (referencedMatch.penaltyWinner) {
+        winner = referencedMatch.penaltyWinner === 'home' ? 'home' : 'away';
+      } else {
+        winner = hs > as_ ? 'home' : 'away';
+      }
+
+      if (type === 'W') {
+        return winner === 'home' ? referencedMatch.homeTeam : referencedMatch.awayTeam;
+      } else {
+        return winner === 'home' ? referencedMatch.awayTeam : referencedMatch.homeTeam;
+      }
+    };
+
+    for (const match of unresolvedMatches) {
+      let homeTeam = match.homeTeam;
+      let awayTeam = match.awayTeam;
+      let updated = false;
+
+      if (homeTeam.startsWith('W') || homeTeam.startsWith('L')) {
+        const resolvedHome = await getTeamFromRef(homeTeam);
+        if (resolvedHome) {
+          homeTeam = resolvedHome;
+          updated = true;
+        }
+      }
+
+      if (awayTeam.startsWith('W') || awayTeam.startsWith('L')) {
+        const resolvedAway = await getTeamFromRef(awayTeam);
+        if (resolvedAway) {
+          awayTeam = resolvedAway;
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        await db.match.update({
+          where: { id: match.id },
+          data: { homeTeam, awayTeam }
+        });
+        resolved.push(`${match.homeTeam} vs ${match.awayTeam} → ${homeTeam} vs ${awayTeam}`);
+      } else {
+        skipped.push(`${match.homeTeam} vs ${match.awayTeam} (esperando partido de origen)`);
+      }
     }
 
     return NextResponse.json({
       success: true,
-      resolved: updated,
+      resolved,
       skipped,
-      message: `${updated.length} cruce(s) resuelto(s), ${skipped.length} pendiente(s).`,
+      message: `Se resolvieron ${resolved.length} cruces. ${skipped.length} siguen esperando resultados.`
     });
   } catch (err: any) {
     console.error('Knockout resolve error:', err);
