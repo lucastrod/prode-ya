@@ -143,16 +143,16 @@ export default function HomePage() {
           const now = new Date();
           const allMatches: Match[] = matchesData.matches || [];
 
-          // Show only ROUND_32 upcoming matches
+          // Show all upcoming knockout matches
           const knockoutUpcoming = allMatches
             .filter((m) =>
-              m.stage === 'ROUND_32' &&
+              m.stage && m.stage !== 'GROUP' &&
               m.status === 'SCHEDULED' &&
               new Date(m.matchDate).getTime() - 15 * 60000 > now.getTime()
             )
             .slice(0, 32);
 
-          const anyKnockout = allMatches.some((m) => m.stage === 'ROUND_32');
+          const anyKnockout = allMatches.some((m) => m.stage && m.stage !== 'GROUP');
           setHasKnockoutMatches(anyKnockout);
 
           // Fallback to group stage if no knockout matches exist yet
