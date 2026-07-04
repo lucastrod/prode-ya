@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { Stage, MatchStatus } from '@prisma/client';
 
 export async function GET(request: Request) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
     const deleted = await db.match.deleteMany({
       where: {
         stage: {
-          in: ['QUARTER', 'SEMI', 'THIRD_PLACE', 'FINAL']
+          in: [Stage.QUARTER, Stage.SEMI, Stage.THIRD_PLACE, Stage.FINAL]
         }
       }
     });
@@ -25,8 +26,8 @@ export async function GET(request: Request) {
         awayTeam: "W90",
         matchDate: new Date("2026-07-09T20:00:00.000Z"),
         groupName: "Fase Final",
-        stage: "QUARTER",
-        status: "SCHEDULED" as const
+        stage: Stage.QUARTER,
+        status: MatchStatus.SCHEDULED
       },
       {
         externalMatchId: "openfootball_2026_knockout_26",
@@ -34,8 +35,8 @@ export async function GET(request: Request) {
         awayTeam: "W94",
         matchDate: new Date("2026-07-10T19:00:00.000Z"),
         groupName: "Fase Final",
-        stage: "QUARTER",
-        status: "SCHEDULED" as const
+        stage: Stage.QUARTER,
+        status: MatchStatus.SCHEDULED
       },
       {
         externalMatchId: "openfootball_2026_knockout_27",
@@ -43,8 +44,8 @@ export async function GET(request: Request) {
         awayTeam: "W92",
         matchDate: new Date("2026-07-11T21:00:00.000Z"),
         groupName: "Fase Final",
-        stage: "QUARTER",
-        status: "SCHEDULED" as const
+        stage: Stage.QUARTER,
+        status: MatchStatus.SCHEDULED
       },
       {
         externalMatchId: "openfootball_2026_knockout_28",
@@ -52,8 +53,8 @@ export async function GET(request: Request) {
         awayTeam: "W96",
         matchDate: new Date("2026-07-12T01:00:00.000Z"),
         groupName: "Fase Final",
-        stage: "QUARTER",
-        status: "SCHEDULED" as const
+        stage: Stage.QUARTER,
+        status: MatchStatus.SCHEDULED
       },
       {
         externalMatchId: "openfootball_2026_knockout_29",
@@ -61,8 +62,8 @@ export async function GET(request: Request) {
         awayTeam: "W98",
         matchDate: new Date("2026-07-14T19:00:00.000Z"),
         groupName: "Fase Final",
-        stage: "SEMI",
-        status: "SCHEDULED" as const
+        stage: Stage.SEMI,
+        status: MatchStatus.SCHEDULED
       },
       {
         externalMatchId: "openfootball_2026_knockout_30",
@@ -70,8 +71,8 @@ export async function GET(request: Request) {
         awayTeam: "W100",
         matchDate: new Date("2026-07-15T19:00:00.000Z"),
         groupName: "Fase Final",
-        stage: "SEMI",
-        status: "SCHEDULED" as const
+        stage: Stage.SEMI,
+        status: MatchStatus.SCHEDULED
       },
       {
         externalMatchId: "openfootball_2026_knockout_31",
@@ -79,8 +80,8 @@ export async function GET(request: Request) {
         awayTeam: "L102",
         matchDate: new Date("2026-07-18T21:00:00.000Z"),
         groupName: "Fase Final",
-        stage: "THIRD_PLACE",
-        status: "SCHEDULED" as const
+        stage: Stage.THIRD_PLACE,
+        status: MatchStatus.SCHEDULED
       },
       {
         externalMatchId: "openfootball_2026_knockout_32",
@@ -88,8 +89,8 @@ export async function GET(request: Request) {
         awayTeam: "W102",
         matchDate: new Date("2026-07-19T19:00:00.000Z"),
         groupName: "Fase Final",
-        stage: "FINAL",
-        status: "SCHEDULED" as const
+        stage: Stage.FINAL,
+        status: MatchStatus.SCHEDULED
       }
     ];
 
