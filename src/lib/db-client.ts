@@ -595,6 +595,16 @@ export const dbClient = {
         if (matchData.status === 'FINISHED') {
           const { recalculateMatchPoints } = await import('./points-engine');
           await recalculateMatchPoints(matchData.id);
+
+          // Auto-resolve knockout brackets when a knockout match finishes
+          if (updated.stage !== Stage.GROUP) {
+            try {
+              const { resolveKnockoutBrackets } = await import('./knockout-resolver');
+              await resolveKnockoutBrackets();
+            } catch (resolveErr) {
+              console.error('Auto knockout resolve failed (non-fatal):', resolveErr);
+            }
+          }
         }
 
         return updated;
