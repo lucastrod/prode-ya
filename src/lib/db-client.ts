@@ -250,6 +250,9 @@ export const dbClient = {
     if (isDbConfigured()) {
       try {
         return await db.standing.findMany({
+          where: {
+            user: { hideFromStandings: false },
+          },
           include: { user: { select: { name: true } } },
           orderBy: [
             { totalPoints: 'desc' },
